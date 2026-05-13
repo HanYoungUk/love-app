@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'home_screen.dart';
 import 'pending_screen.dart';
 import 'register_screen.dart';
+import '../utils/app_routes.dart';
 
 const _ownerEmail = 'gksdud9685@loveapp.com';
 const _domain = '@loveapp.com';
@@ -64,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => approved ? const HomeScreen() : const PendingScreen()),
+        appRoute(approved ? const HomeScreen() : const PendingScreen()),
       );
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
@@ -134,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => approved ? const HomeScreen() : const PendingScreen()),
+        appRoute(approved ? const HomeScreen() : const PendingScreen()),
       );
     } on FirebaseAuthException catch (e) {
       String message;
@@ -438,7 +439,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               onPressed: _isLoading
                                   ? null
                                   : () => Navigator.of(context).push(
-                                        MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                                        appRoute(const RegisterScreen()),
                                       ),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: const Color(0xFFE91E63),

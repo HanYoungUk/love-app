@@ -11,6 +11,7 @@ import 'package:http/http.dart' as http;
 import 'diary_screen.dart';
 import 'login_screen.dart';
 import 'memo_screen.dart';
+import '../utils/app_routes.dart';
 
 const _projectId = 'love-app-4e2ac';
 const _storageBucket = 'love-app-4e2ac.firebasestorage.app';
@@ -288,10 +289,17 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadPhoto();
-    _loadDiaryDates();
-    _loadMemos();
+    _loadAll();
     _computeMilestones();
+  }
+
+  Future<void> _loadAll() async {
+    final token = kIsWeb ? await _getIdToken() : null;
+    await Future.wait([
+      _loadPhoto(token: token),
+      _loadDiaryDates(token: token),
+      _loadMemos(token: token),
+    ]);
   }
 
   void _computeMilestones() {
@@ -323,10 +331,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _loadMemos() async {
+  Future<void> _loadMemos({String? token}) async {
     try {
       if (kIsWeb) {
-        final token = await _getIdToken();
+        token ??= await _getIdToken();
         if (token == null) return;
         final res = await http.get(
           Uri.parse('https://firestore.googleapis.com/v1/projects/$_projectId/databases/(default)/documents/memos'),
@@ -392,10 +400,10 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (_) {}
   }
 
-  Future<void> _loadDiaryDates() async {
+  Future<void> _loadDiaryDates({String? token}) async {
     try {
       if (kIsWeb) {
-        final token = await _getIdToken();
+        token ??= await _getIdToken();
         if (token == null) return;
         final res = await http.get(
           Uri.parse('https://firestore.googleapis.com/v1/projects/$_projectId/databases/(default)/documents/diaries'),
@@ -422,7 +430,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (_) {}
   }
 
-  Future<void> _loadPhoto({bool clearCache = false}) async {
+  Future<void> _loadPhoto({bool clearCache = false, String? token}) async {
     final prefs = await SharedPreferences.getInstance();
 
     if (clearCache) {
@@ -435,7 +443,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       String url;
       if (kIsWeb) {
-        final token = await _getIdToken();
+        token ??= await _getIdToken();
         if (token == null) return;
         final encoded = Uri.encodeComponent('couple/photo.jpg');
         final res = await http.get(
@@ -515,7 +523,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         await FirebaseAuth.instance.signOut();
                         if (context.mounted) {
                           Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(builder: (_) => const LoginScreen()),
+                            appRoute(const LoginScreen()),
                           );
                         }
                       },
@@ -659,9 +667,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               });
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(
-                                  builder: (_) => DiaryScreen(date: selectedDay),
-                                ),
+                                appRoute(DiaryScreen(date: selectedDay)),
                               ).then((_) => _loadDiaryDates());
                             },
                             onDayLongPressed: (selectedDay, focusedDay) {
@@ -672,12 +678,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               final key = _toKey(selectedDay);
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(
-                                  builder: (_) => MemoScreen(
-                                    date: selectedDay,
-                                    initialText: _memos[key],
-                                  ),
-                                ),
+                                appRoute(MemoScreen(
+                                  date: selectedDay,
+                                  initialText: _memos[key],
+                                )),
                               ).then((result) {
                                 if (result == null) return;
                                 setState(() {
