@@ -42,12 +42,27 @@ Map<String, dynamic> _toFsVal(dynamic value) {
   return {'stringValue': '$value'};
 }
 
+class _ScheduleEntry {
+  final TextEditingController timeController;
+  final TextEditingController titleController;
+
+  _ScheduleEntry([String time = '', String title = ''])
+      : timeController = TextEditingController(text: time),
+        titleController = TextEditingController(text: title);
+
+  void dispose() {
+    timeController.dispose();
+    titleController.dispose();
+  }
+}
+
 class _PlaceEntry {
   final TextEditingController nameController;
   String address;
-  int rating;
+  int meRating;
+  int partnerRating;
 
-  _PlaceEntry([String name = '', this.address = '', this.rating = 0])
+  _PlaceEntry([String name = '', this.address = '', this.meRating = 0, this.partnerRating = 0])
       : nameController = TextEditingController(text: name);
 
   void dispose() => nameController.dispose();
@@ -96,13 +111,11 @@ class _DiaryScreenState extends State<DiaryScreen> {
   final _partnerTopController = TextEditingController();
   List<_PhotoEntry> _meEntries = [];
   List<_PhotoEntry> _partnerEntries = [];
+  List<_ScheduleEntry> _schedules = [];
   List<_PlaceEntry> _mePlaces = [];
-  List<_PlaceEntry> _partnerPlaces = [];
   bool _uploadingMe = false;
   bool _uploadingPartner = false;
   bool _saving = false;
-  int _meRating = 0;
-  int _partnerRating = 0;
   bool _showMe = true;
   bool _docExists = false;
 
@@ -124,8 +137,8 @@ class _DiaryScreenState extends State<DiaryScreen> {
     _partnerTopController.dispose();
     for (final e in _meEntries) e.dispose();
     for (final e in _partnerEntries) e.dispose();
+    for (final s in _schedules) s.dispose();
     for (final p in _mePlaces) p.dispose();
-    for (final p in _partnerPlaces) p.dispose();
     super.dispose();
   }
 
@@ -170,20 +183,23 @@ class _DiaryScreenState extends State<DiaryScreen> {
       return photos.map((url) => _PhotoEntry(url)).toList();
     }
 
-    int parseRating(dynamic raw) {
-      if (raw == null) return 0;
-      final map = raw as Map<String, dynamic>;
-      return (map['rating'] as int?) ?? 0;
-    }
-
     List<_PhotoEntry> meEntries = [];
     List<_PhotoEntry> partnerEntries = [];
+    List<_ScheduleEntry> schedules = [];
     List<_PlaceEntry> mePlaces = [];
-    List<_PlaceEntry> partnerPlaces = [];
-    int meRating = 0;
-    int partnerRating = 0;
     String meTopText = '';
     String partnerTopText = '';
+
+    List<_ScheduleEntry> parseSchedules(dynamic raw) {
+      if (raw == null) return [];
+      return (raw as List<dynamic>).map((s) {
+        final map = s as Map<String, dynamic>;
+        return _ScheduleEntry(
+          map['time'] as String? ?? '',
+          map['title'] as String? ?? '',
+        );
+      }).toList();
+    }
 
     List<_PlaceEntry> parsePlaces(dynamic raw) {
       if (raw == null) return [];
@@ -192,7 +208,8 @@ class _DiaryScreenState extends State<DiaryScreen> {
         return _PlaceEntry(
           map['name'] as String? ?? '',
           map['address'] as String? ?? '',
-          (map['rating'] as int?) ?? 0,
+          (map['meRating'] as int?) ?? (map['rating'] as int?) ?? 0,
+          (map['partnerRating'] as int?) ?? 0,
         );
       }).toList();
     }
@@ -203,21 +220,19 @@ class _DiaryScreenState extends State<DiaryScreen> {
       partnerTopText = parseTopText(data['partner']);
       meEntries = parseSection(data['me']);
       partnerEntries = parseSection(data['partner']);
-      mePlaces = parsePlaces(data['me']?['places']);
-      partnerPlaces = parsePlaces(data['partner']?['places']);
-      meRating = parseRating(data['me']);
-      partnerRating = parseRating(data['partner']);
+      schedules = parseSchedules(data['sharedSchedules']);
+      mePlaces = data['sharedPlaces'] != null
+          ? parsePlaces(data['sharedPlaces'])
+          : parsePlaces(data['me']?['places']);
     } else if (data['entries'] != null) {
       // 이전 entries 형식 → me로 이전
       final entries = data['entries'] as Map<String, dynamic>;
       final values = entries.values.toList();
       if (values.isNotEmpty) {
         meEntries = parseSection(values[0]);
-        meRating = parseRating(values[0]);
       }
       if (values.length > 1) {
         partnerEntries = parseSection(values[1]);
-        partnerRating = parseRating(values[1]);
       }
     } else {
       // 아주 오래된 형식 (top-level)
@@ -234,7 +249,6 @@ class _DiaryScreenState extends State<DiaryScreen> {
         meEntries = photos.map((url) => _PhotoEntry(url)).toList();
       }
       meTopText = (data['text'] as String? ?? '');
-      meRating = (data['rating'] as int?) ?? 0;
     }
 
     setState(() {
@@ -244,12 +258,10 @@ class _DiaryScreenState extends State<DiaryScreen> {
       _meEntries = meEntries;
       for (final e in _partnerEntries) e.dispose();
       _partnerEntries = partnerEntries;
+      for (final s in _schedules) s.dispose();
+      _schedules = schedules;
       for (final p in _mePlaces) p.dispose();
       _mePlaces = mePlaces;
-      for (final p in _partnerPlaces) p.dispose();
-      _partnerPlaces = partnerPlaces;
-      _meRating = meRating;
-      _partnerRating = partnerRating;
     });
   }
 
@@ -306,8 +318,8 @@ class _DiaryScreenState extends State<DiaryScreen> {
       _partnerTopController.text.trim().isNotEmpty ||
       _meEntries.isNotEmpty ||
       _partnerEntries.isNotEmpty ||
-      _mePlaces.isNotEmpty ||
-      _partnerPlaces.isNotEmpty;
+      _schedules.isNotEmpty ||
+      _mePlaces.isNotEmpty;
 
   List<Map<String, dynamic>> _toBlocks(List<_PhotoEntry> entries) {
     final blocks = <Map<String, dynamic>>[];
@@ -338,6 +350,44 @@ class _DiaryScreenState extends State<DiaryScreen> {
     }
   }
 
+  Future<void> _resetAll() async {
+    setState(() => _saving = true);
+    try {
+      for (final entry in [..._meEntries, ..._partnerEntries]) {
+        try {
+          await FirebaseStorage.instance.refFromURL(entry.imageUrl).delete();
+        } catch (_) {}
+      }
+      if (_docExists) await _deleteDoc();
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+    if (mounted) Navigator.pop(context);
+  }
+
+  Future<void> _confirmAndReset() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('전체 초기화', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text('이 날의 글, 사진, 일정, 장소를\n모두 삭제할까요?\n\n되돌릴 수 없어요.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('취소', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('삭제', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _resetAll();
+  }
+
   Future<void> _save() async {
     if (!_hasContent) {
       await _deleteDoc();
@@ -350,13 +400,21 @@ class _DiaryScreenState extends State<DiaryScreen> {
         'me': {
           'topText': _meTopController.text,
           'blocks': _toBlocks(_meEntries),
-          'places': _mePlaces.map((p) => {'name': p.nameController.text, 'address': p.address, 'rating': p.rating}).toList(),
         },
         'partner': {
           'topText': _partnerTopController.text,
           'blocks': _toBlocks(_partnerEntries),
-          'places': _partnerPlaces.map((p) => {'name': p.nameController.text, 'address': p.address, 'rating': p.rating}).toList(),
         },
+        'sharedSchedules': _schedules.map((s) => {
+          'time': s.timeController.text.trim(),
+          'title': s.titleController.text.trim(),
+        }).toList(),
+        'sharedPlaces': _mePlaces.map((p) => {
+          'name': p.nameController.text,
+          'address': p.address,
+          'meRating': p.meRating,
+          'partnerRating': p.partnerRating,
+        }).toList(),
       };
 
       if (kIsWeb) {
@@ -689,7 +747,83 @@ class _DiaryScreenState extends State<DiaryScreen> {
     await openUrl('https://maps.google.com/');
   }
 
-  Widget _buildPlacesSection(List<_PlaceEntry> places, bool isMe) {
+  Widget _buildScheduleSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.calendar_today, color: Colors.white, size: 14),
+            const SizedBox(width: 6),
+            const Text('오늘의 일정', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        const SizedBox(height: 10),
+        ...List.generate(_schedules.length, (i) {
+          final s = _schedules[i];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 52,
+                  child: TextField(
+                    controller: s.timeController,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    cursorColor: Colors.white,
+                    keyboardType: TextInputType.datetime,
+                    decoration: InputDecoration(
+                      hintText: '00:00',
+                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
+                      isDense: true,
+                    ),
+                  ),
+                ),
+                Container(width: 1, height: 14, color: Colors.white.withValues(alpha: 0.4)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: s.titleController,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    cursorColor: Colors.white,
+                    decoration: InputDecoration(
+                      hintText: '일정 내용',
+                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
+                      isDense: true,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => setState(() => _schedules.removeAt(i)),
+                  child: Icon(Icons.close, color: Colors.white.withValues(alpha: 0.6), size: 16),
+                ),
+              ],
+            ),
+          );
+        }),
+        GestureDetector(
+          onTap: () => setState(() => _schedules.add(_ScheduleEntry())),
+          child: Row(
+            children: [
+              Icon(Icons.add, color: Colors.white.withValues(alpha: 0.8), size: 14),
+              const SizedBox(width: 4),
+              Text('일정 추가', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        Divider(color: Colors.white.withValues(alpha: 0.3), thickness: 1),
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+
+  Widget _buildPlacesSection(bool isMe) {
+    final places = _mePlaces;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -749,14 +883,21 @@ class _DiaryScreenState extends State<DiaryScreen> {
                         child: Icon(Icons.search, color: Colors.white.withValues(alpha: 0.8), size: 20),
                       ),
                     ),
-                    ...List.generate(5, (s) => GestureDetector(
-                      onTap: () => setState(() => place.rating = s + 1 == place.rating ? 0 : s + 1),
-                      child: Icon(
-                        s < place.rating ? Icons.star : Icons.star_border,
-                        color: Colors.yellow,
-                        size: 20,
-                      ),
-                    )),
+                    ...List.generate(5, (s) {
+                      final currentRating = isMe ? place.meRating : place.partnerRating;
+                      return GestureDetector(
+                        onTap: () => setState(() {
+                          final next = s + 1 == currentRating ? 0 : s + 1;
+                          if (isMe) place.meRating = next;
+                          else place.partnerRating = next;
+                        }),
+                        child: Icon(
+                          s < currentRating ? Icons.star : Icons.star_border,
+                          color: Colors.yellow,
+                          size: 20,
+                        ),
+                      );
+                    }),
                     const SizedBox(width: 4),
                     GestureDetector(
                       onTap: () => setState(() {
@@ -814,9 +955,10 @@ class _DiaryScreenState extends State<DiaryScreen> {
                   fontSize: 15,
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
+          _buildScheduleSection(),
           _buildEntriesList(entries, isMe, isMe ? _meTopController : _partnerTopController),
           const SizedBox(height: 16),
-          _buildPlacesSection(isMe ? _mePlaces : _partnerPlaces, isMe),
+          _buildPlacesSection(isMe),
         ],
       ),
     );
@@ -879,6 +1021,26 @@ class _DiaryScreenState extends State<DiaryScreen> {
                             icon: const Icon(Icons.check,
                                 color: Colors.white, size: 28),
                           ),
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert, color: Colors.white),
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      onSelected: (value) {
+                        if (value == 'reset') _confirmAndReset();
+                      },
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(
+                          value: 'reset',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete_sweep_outlined, color: Colors.red, size: 20),
+                              SizedBox(width: 8),
+                              Text('전체 초기화', style: TextStyle(color: Colors.red)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),

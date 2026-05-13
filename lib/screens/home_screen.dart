@@ -10,6 +10,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:http/http.dart' as http;
 import 'diary_screen.dart';
 import 'login_screen.dart';
+import 'memo_screen.dart';
 
 const _projectId = 'love-app-4e2ac';
 const _storageBucket = 'love-app-4e2ac.firebasestorage.app';
@@ -279,6 +280,7 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime? _selectedDay;
   Set<String> _diaryDates = {};
   Map<String, String> _milestones = {};
+  Map<String, String> _memos = {};
 
   String _toKey(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
@@ -288,6 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _loadPhoto();
     _loadDiaryDates();
+    _loadMemos();
     _computeMilestones();
   }
 
@@ -318,6 +321,75 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (_) {
       return null;
     }
+  }
+
+  Future<void> _loadMemos() async {
+    try {
+      if (kIsWeb) {
+        final token = await _getIdToken();
+        if (token == null) return;
+        final res = await http.get(
+          Uri.parse('https://firestore.googleapis.com/v1/projects/$_projectId/databases/(default)/documents/memos'),
+          headers: {'Authorization': 'Bearer $token'},
+        );
+        if (res.statusCode == 200 && mounted) {
+          final data = jsonDecode(res.body) as Map<String, dynamic>;
+          final docs = (data['documents'] as List<dynamic>?) ?? [];
+          final map = <String, String>{};
+          for (final doc in docs) {
+            final d = doc as Map<String, dynamic>;
+            final name = (d['name'] as String).split('/').last;
+            final fields = d['fields'] as Map<String, dynamic>? ?? {};
+            final textField = fields['text'] as Map<String, dynamic>?;
+            final text = textField?['stringValue'] as String? ?? '';
+            if (text.isNotEmpty) map[name] = text;
+          }
+          setState(() => _memos = map);
+        }
+      } else {
+        final snapshot = await FirebaseFirestore.instance.collection('memos').get();
+        if (mounted) {
+          setState(() {
+            _memos = {
+              for (final d in snapshot.docs)
+                if ((d.data()['text'] as String? ?? '').isNotEmpty)
+                  d.id: d.data()['text'] as String,
+            };
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveMemo(String dateKey, String text) async {
+    try {
+      if (text.isEmpty) {
+        if (kIsWeb) {
+          final token = await _getIdToken();
+          if (token == null) return;
+          await http.delete(
+            Uri.parse('https://firestore.googleapis.com/v1/projects/$_projectId/databases/(default)/documents/memos/$dateKey'),
+            headers: {'Authorization': 'Bearer $token'},
+          );
+        } else {
+          await FirebaseFirestore.instance.collection('memos').doc(dateKey).delete();
+        }
+        if (mounted) setState(() => _memos.remove(dateKey));
+      } else {
+        if (kIsWeb) {
+          final token = await _getIdToken();
+          if (token == null) return;
+          await http.patch(
+            Uri.parse('https://firestore.googleapis.com/v1/projects/$_projectId/databases/(default)/documents/memos/$dateKey'),
+            headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+            body: jsonEncode({'fields': {'text': {'stringValue': text}}}),
+          );
+        } else {
+          await FirebaseFirestore.instance.collection('memos').doc(dateKey).set({'text': text});
+        }
+        if (mounted) setState(() => _memos[dateKey] = text);
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadDiaryDates() async {
@@ -592,17 +664,44 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ).then((_) => _loadDiaryDates());
                             },
+                            onDayLongPressed: (selectedDay, focusedDay) {
+                              setState(() {
+                                _selectedDay = selectedDay;
+                                _focusedDay = focusedDay;
+                              });
+                              final key = _toKey(selectedDay);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => MemoScreen(
+                                    date: selectedDay,
+                                    initialText: _memos[key],
+                                  ),
+                                ),
+                              ).then((result) {
+                                if (result == null) return;
+                                setState(() {
+                                  if (result.isEmpty) {
+                                    _memos.remove(key);
+                                  } else {
+                                    _memos[key] = result as String;
+                                  }
+                                });
+                              });
+                            },
                             eventLoader: (day) {
                               final key = _toKey(day);
                               final events = <String>[];
                               if (_diaryDates.contains(key)) events.add('diary');
                               if (_milestones.containsKey(key)) events.add('milestone:${_milestones[key]}');
+                              if (_memos.containsKey(key)) events.add('memo');
                               return events;
                             },
                             calendarBuilders: CalendarBuilders(
                               markerBuilder: (context, day, events) {
                                 if (events.isEmpty) return const SizedBox.shrink();
                                 final hasDiary = events.contains('diary');
+                                final hasMemo = events.contains('memo');
                                 final milestoneEvent = events.cast<String>().firstWhere(
                                   (e) => e.startsWith('milestone:'), orElse: () => '');
                                 final label = milestoneEvent.isNotEmpty
@@ -625,8 +724,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   color: Colors.white,
                                                   fontWeight: FontWeight.bold)),
                                         ),
-                                      if (hasDiary)
-                                        const Text('❤️', style: TextStyle(fontSize: 11)),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (hasDiary) const Text('❤️', style: TextStyle(fontSize: 11)),
+                                          if (hasMemo) const Text('📝', style: TextStyle(fontSize: 10)),
+                                        ],
+                                      ),
                                     ],
                                   ),
                                 );

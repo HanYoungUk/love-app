@@ -41,7 +41,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final autoLogin = prefs.getBool('auto_login') ?? false;
     if (!autoLogin) return;
 
-    final user = FirebaseAuth.instance.currentUser;
+    // currentUser는 iOS에서 앱 시작 직후 null일 수 있어서 authStateChanges로 복원 완료를 기다림
+    final user = await FirebaseAuth.instance.authStateChanges().first;
     if (user == null) return;
 
     setState(() => _isLoading = true);
