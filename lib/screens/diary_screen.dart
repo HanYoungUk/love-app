@@ -8,6 +8,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import '../services/kakao_service.dart';
 import '../utils/open_url.dart';
+import '../utils/app_routes.dart';
+import 'gallery_screen.dart';
 
 const _fsProject = 'love-app-4e2ac';
 const _fsBase = 'https://firestore.googleapis.com/v1/projects/$_fsProject/databases/(default)/documents';
@@ -1021,6 +1023,14 @@ class _DiaryScreenState extends State<DiaryScreen> {
                             icon: const Icon(Icons.check,
                                 color: Colors.white, size: 28),
                           ),
+                    IconButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        appRoute(GalleryScreen(date: widget.date)),
+                      ),
+                      icon: const Icon(Icons.photo_library_outlined,
+                          color: Colors.white, size: 26),
+                    ),
                     PopupMenuButton<String>(
                       icon: const Icon(Icons.more_vert, color: Colors.white),
                       color: Colors.white,
