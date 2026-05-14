@@ -48,3 +48,7 @@ app.*.map.json
 node_modules/
 functions/node_modules/
 .firebase/
+
+# Secrets (API keys)
+env.json
+android/app/google-services.json

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
-const _kakaoRestApiKey = 'd8a1b08adb28790ef2087fc2b892d549';
+const _kakaoRestApiKey = String.fromEnvironment('KAKAO_REST_API_KEY');
 const _redirectUri = 'https://love-app-4e2ac.web.app';
 const _fsBase = 'https://firestore.googleapis.com/v1/projects/love-app-4e2ac/databases/(default)/documents';
 
