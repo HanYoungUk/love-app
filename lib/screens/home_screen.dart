@@ -281,6 +281,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, String> _memos = {};
   StreamSubscription? _heartSub;
   bool _heartAnimating = false;
+  OverlayEntry? _heartEntry;
 
   String _toKey(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
@@ -297,6 +298,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _heartSub?.cancel();
+    _heartEntry?.remove();
+    _heartEntry = null;
     super.dispose();
   }
 
@@ -384,15 +387,15 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showHeartAnimation() {
     if (_heartAnimating) return;
     final overlay = Overlay.of(context);
-    late OverlayEntry entry;
-    entry = OverlayEntry(
+    _heartEntry = OverlayEntry(
       builder: (_) => _HeartBurst(onDone: () {
-        entry.remove();
+        _heartEntry?.remove();
+        _heartEntry = null;
         if (mounted) setState(() => _heartAnimating = false);
       }),
     );
     setState(() => _heartAnimating = true);
-    overlay.insert(entry);
+    overlay.insert(_heartEntry!);
   }
 
   // ── 다음 기념일 ──────────────────────────────────────────────

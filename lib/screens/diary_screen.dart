@@ -502,9 +502,12 @@ class _DiaryScreenState extends State<DiaryScreen> {
                           if (i > 0)
                             GestureDetector(
                               onTap: () => setState(() {
-                                final tmp = entries[i].imageUrl;
+                                final tmpUrl = entries[i].imageUrl;
+                                final tmpText = entries[i].controller.text;
                                 entries[i].imageUrl = entries[i - 1].imageUrl;
-                                entries[i - 1].imageUrl = tmp;
+                                entries[i].controller.text = entries[i - 1].controller.text;
+                                entries[i - 1].imageUrl = tmpUrl;
+                                entries[i - 1].controller.text = tmpText;
                               }),
                               child: Container(
                                 padding: const EdgeInsets.all(4),
@@ -518,9 +521,12 @@ class _DiaryScreenState extends State<DiaryScreen> {
                           if (i < entries.length - 1)
                             GestureDetector(
                               onTap: () => setState(() {
-                                final tmp = entries[i].imageUrl;
+                                final tmpUrl = entries[i].imageUrl;
+                                final tmpText = entries[i].controller.text;
                                 entries[i].imageUrl = entries[i + 1].imageUrl;
-                                entries[i + 1].imageUrl = tmp;
+                                entries[i].controller.text = entries[i + 1].controller.text;
+                                entries[i + 1].imageUrl = tmpUrl;
+                                entries[i + 1].controller.text = tmpText;
                               }),
                               child: Container(
                                 padding: const EdgeInsets.all(4),
@@ -608,8 +614,9 @@ class _DiaryScreenState extends State<DiaryScreen> {
         'query': query,
         'size': '10',
       });
+      const kakaoRestApiKey = String.fromEnvironment('KAKAO_REST_API_KEY');
       final response = await http.get(uri, headers: {
-        'Authorization': 'KakaoAK d8a1b08adb28790ef2087fc2b892d549',
+        'Authorization': 'KakaoAK $kakaoRestApiKey',
       });
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
