@@ -18,36 +18,39 @@ class NotificationService {
   static GlobalKey<ScaffoldMessengerState> get scaffoldKey => _scaffoldKey;
 
   static Future<void> init() async {
-    FirebaseMessaging.onBackgroundMessage(_onBackgroundMessage);
+    try {
+      if (!kIsWeb) {
+        FirebaseMessaging.onBackgroundMessage(_onBackgroundMessage);
+      }
 
-    final messaging = FirebaseMessaging.instance;
-    await messaging.requestPermission(alert: true, badge: true, sound: true);
+      final messaging = FirebaseMessaging.instance;
+      await messaging.requestPermission(alert: true, badge: true, sound: true);
 
-    // 앱 열려있을 때 포그라운드 메시지 처리
-    FirebaseMessaging.onMessage.listen((message) {
-      final notification = message.notification;
-      if (notification == null) return;
-      _scaffoldKey.currentState?.showSnackBar(
-        SnackBar(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                notification.title ?? '',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              if ((notification.body ?? '').isNotEmpty)
-                Text(notification.body!),
-            ],
+      FirebaseMessaging.onMessage.listen((message) {
+        final notification = message.notification;
+        if (notification == null) return;
+        _scaffoldKey.currentState?.showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  notification.title ?? '',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                if ((notification.body ?? '').isNotEmpty)
+                  Text(notification.body!),
+              ],
+            ),
+            backgroundColor: const Color(0xFFE91E63),
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          backgroundColor: const Color(0xFFE91E63),
-          duration: const Duration(seconds: 4),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
-    });
+        );
+      });
+    } catch (_) {}
   }
 
   // 로그인 후 홈 화면에서 호출
