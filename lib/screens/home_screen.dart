@@ -306,10 +306,14 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final settings = await FirebaseMessaging.instance.getNotificationSettings();
       final status = settings.authorizationStatus;
-      if (status == AuthorizationStatus.notDetermined && mounted) {
+      // 이미 허용된 경우엔 배너 숨김, 그 외(미결정/거부/불가)엔 배너 표시
+      if (status != AuthorizationStatus.authorized && mounted) {
         setState(() => _showNotifBanner = true);
       }
-    } catch (_) {}
+    } catch (_) {
+      // getNotificationSettings 실패 시 일단 배너 표시
+      if (mounted) setState(() => _showNotifBanner = true);
+    }
   }
 
   Future<void> _requestNotifPermission() async {
