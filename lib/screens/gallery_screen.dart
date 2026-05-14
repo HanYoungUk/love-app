@@ -1,40 +1,6 @@
-import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
-
-const _bucket = 'love-app-4e2ac.firebasestorage.app';
-
-class _Photo {
-  final String storagePath;
-  final String url;
-  const _Photo({required this.storagePath, required this.url});
-}
-
-Future<String?> _getToken() async {
-  try {
-    return await FirebaseAuth.instance.currentUser?.getIdToken();
-  } catch (_) {
-    return null;
-  }
-}
-
-Future<void> _deletePhoto(_Photo photo) async {
-  if (kIsWeb) {
-    final token = await _getToken();
-    if (token == null) return;
-    final encoded = Uri.encodeComponent(photo.storagePath);
-    await http.delete(
-      Uri.parse('https://firebasestorage.googleapis.com/v0/b/$_bucket/o/$encoded'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-  } else {
-    await FirebaseStorage.instance.ref(photo.storagePath).delete();
-  }
-}
 
 // ─── 갤러리 화면 ─────────────────────────────────────────
 
@@ -67,41 +33,13 @@ class _GalleryScreenState extends State<GalleryScreen> {
   Future<void> _loadPhotos() async {
     if (mounted) setState(() => _loading = true);
     try {
-      if (kIsWeb) {
-        final token = await _getToken();
-        if (token == null) return;
-        final encoded = Uri.encodeComponent(_prefix);
-        final res = await http.get(
-          Uri.parse(
-              'https://firebasestorage.googleapis.com/v0/b/$_bucket/o?prefix=$encoded'),
-          headers: {'Authorization': 'Bearer $token'},
-        );
-        if (res.statusCode == 200 && mounted) {
-          final data = jsonDecode(res.body) as Map<String, dynamic>;
-          final items = (data['items'] as List<dynamic>?) ?? [];
-          final photos = <_Photo>[];
-          for (final item in items) {
-            final map = item as Map<String, dynamic>;
-            final name = map['name'] as String;
-            final tokens = (map['downloadTokens'] as String? ?? '').split(',');
-            if (tokens.isEmpty) continue;
-            final encodedName = Uri.encodeComponent(name);
-            final url =
-                'https://firebasestorage.googleapis.com/v0/b/$_bucket/o/$encodedName?alt=media&token=${tokens.first}';
-            photos.add(_Photo(storagePath: name, url: url));
-          }
-          setState(() => _photos = photos);
-        }
-      } else {
-        final result =
-            await FirebaseStorage.instance.ref(_prefix).listAll();
-        final photos = <_Photo>[];
-        for (final ref in result.items) {
-          final url = await ref.getDownloadURL();
-          photos.add(_Photo(storagePath: ref.fullPath, url: url));
-        }
-        if (mounted) setState(() => _photos = photos);
+      final result = await FirebaseStorage.instance.ref(_prefix).listAll();
+      final photos = <_Photo>[];
+      for (final ref in result.items) {
+        final url = await ref.getDownloadURL();
+        photos.add(_Photo(storagePath: ref.fullPath, url: url));
       }
+      if (mounted) setState(() => _photos = photos);
     } catch (_) {
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -139,8 +77,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child:
-                    const Text('취소', style: TextStyle(color: Colors.grey)),
+                child: const Text('취소', style: TextStyle(color: Colors.grey)),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, true),
@@ -231,8 +168,10 @@ class _GalleryScreenState extends State<GalleryScreen> {
                           )
                         : IconButton(
                             onPressed: _upload,
-                            icon: const Icon(Icons.add_photo_alternate_outlined,
-                                color: Colors.white, size: 28),
+                            icon: const Icon(
+                                Icons.add_photo_alternate_outlined,
+                                color: Colors.white,
+                                size: 28),
                           ),
                   ],
                 ),
@@ -313,6 +252,12 @@ class _GalleryScreenState extends State<GalleryScreen> {
 
 // ─── 전체화면 뷰어 ────────────────────────────────────────
 
+class _Photo {
+  final String storagePath;
+  final String url;
+  const _Photo({required this.storagePath, required this.url});
+}
+
 class _PhotoViewer extends StatefulWidget {
   final List<_Photo> photos;
   final int initialIndex;
@@ -354,7 +299,7 @@ class _PhotoViewerState extends State<_PhotoViewer> {
     if (!confirmed || !mounted) return;
     setState(() => _deleting = true);
     try {
-      await _deletePhoto(_photos[_current]);
+      await FirebaseStorage.instance.ref(_photos[_current].storagePath).delete();
       setState(() {
         _photos.removeAt(_current);
         if (_photos.isEmpty) {
@@ -394,7 +339,8 @@ class _PhotoViewerState extends State<_PhotoViewer> {
                     loadingBuilder: (_, child, progress) {
                       if (progress == null) return child;
                       return const Center(
-                        child: CircularProgressIndicator(color: Colors.white),
+                        child:
+                            CircularProgressIndicator(color: Colors.white),
                       );
                     },
                   ),
