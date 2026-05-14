@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import '../utils/download_helper.dart';
 
 // ─── 갤러리 화면 ─────────────────────────────────────────
 
@@ -16,6 +17,8 @@ class _GalleryScreenState extends State<GalleryScreen> {
   List<_Photo> _photos = [];
   bool _loading = true;
   bool _uploading = false;
+  bool _downloading = false;
+  int _downloadProgress = 0;
 
   String get _dateKey {
     final d = widget.date;
@@ -62,6 +65,32 @@ class _GalleryScreenState extends State<GalleryScreen> {
       await _loadPhotos();
     } finally {
       if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  Future<void> _downloadAll() async {
+    if (_photos.isEmpty) return;
+    setState(() { _downloading = true; _downloadProgress = 0; });
+    String? lastSavedPath;
+    try {
+      for (int i = 0; i < _photos.length; i++) {
+        final filename = '${_dateKey}_${i + 1}.jpg';
+        lastSavedPath = await downloadFile(_photos[i].url, filename);
+        if (mounted) setState(() => _downloadProgress = i + 1);
+        await Future.delayed(const Duration(milliseconds: 300));
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(lastSavedPath != null && lastSavedPath.contains('/')
+              ? '${_photos.length}장 저장 완료!\n$lastSavedPath'
+              : '${_photos.length}장 다운로드 완료!'),
+          backgroundColor: const Color(0xFFE91E63),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() { _downloading = false; _downloadProgress = 0; });
     }
   }
 
@@ -156,6 +185,31 @@ class _GalleryScreenState extends State<GalleryScreen> {
                         ],
                       ),
                     ),
+                    if (_downloading)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(
+                              width: 16, height: 16,
+                              child: CircularProgressIndicator(
+                                  color: Colors.white, strokeWidth: 2),
+                            ),
+                            const SizedBox(width: 6),
+                            Text('$_downloadProgress/${_photos.length}',
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 12)),
+                          ],
+                        ),
+                      )
+                    else if (_photos.isNotEmpty)
+                      IconButton(
+                        onPressed: _downloadAll,
+                        icon: const Icon(Icons.download_outlined,
+                            color: Colors.white, size: 26),
+                        tooltip: '전체 다운로드',
+                      ),
                     _uploading
                         ? const Padding(
                             padding: EdgeInsets.all(12),
@@ -278,6 +332,7 @@ class _PhotoViewerState extends State<_PhotoViewer> {
   late final List<_Photo> _photos;
   late int _current;
   bool _deleting = false;
+  bool _downloading = false;
   bool _barsVisible = true;
 
   @override
@@ -292,6 +347,24 @@ class _PhotoViewerState extends State<_PhotoViewer> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleDownload() async {
+    setState(() => _downloading = true);
+    try {
+      final filename = '${_photos[_current].storagePath.split('/').last}';
+      await downloadFile(_photos[_current].url, filename);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Text('다운로드 완료!'),
+          backgroundColor: const Color(0xFFE91E63),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _downloading = false);
+    }
   }
 
   Future<void> _handleDelete() async {
@@ -380,6 +453,20 @@ class _PhotoViewerState extends State<_PhotoViewer> {
                               fontWeight: FontWeight.w500),
                         ),
                         const Spacer(),
+                        _downloading
+                            ? const Padding(
+                                padding: EdgeInsets.all(12),
+                                child: SizedBox(
+                                  width: 22, height: 22,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2),
+                                ),
+                              )
+                            : IconButton(
+                                onPressed: _handleDownload,
+                                icon: const Icon(Icons.download_outlined,
+                                    color: Colors.white, size: 26),
+                              ),
                         _deleting
                             ? const Padding(
                                 padding: EdgeInsets.all(12),
