@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class BucketListScreen extends StatefulWidget {
   const BucketListScreen({super.key});
@@ -43,9 +44,11 @@ class _BucketListScreenState extends State<BucketListScreen> {
   Future<void> _add() async {
     final title = _ctrl.text.trim();
     if (title.isEmpty) return;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
     final doc = await _db.collection('bucket_list').add({
       'title': title,
       'isDone': false,
+      'authorUid': uid,
       'createdAt': FieldValue.serverTimestamp(),
     });
     setState(() {

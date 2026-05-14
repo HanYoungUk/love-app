@@ -4,12 +4,15 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/login_screen.dart';
 import 'services/kakao_service.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  await NotificationService.init();
 
   // 카카오 OAuth 콜백 감지 (웹에서 code 파라미터 확인)
   if (kIsWeb) {
@@ -29,6 +32,7 @@ class LoveApp extends StatelessWidget {
     return MaterialApp(
       title: 'Love App',
       debugShowCheckedModeBanner: false,
+      scaffoldMessengerKey: NotificationService.scaffoldKey,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFFE91E63),

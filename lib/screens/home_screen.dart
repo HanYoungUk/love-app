@@ -14,6 +14,7 @@ import 'login_screen.dart';
 import 'memo_screen.dart';
 import 'bucket_list_screen.dart';
 import '../utils/app_routes.dart';
+import '../services/notification_service.dart';
 
 const _projectId = 'love-app-4e2ac';
 const _storageBucket = 'love-app-4e2ac.firebasestorage.app';
@@ -293,6 +294,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadStartDate();
     _computeMilestones();
     _listenHearts();
+    NotificationService.saveToken();
   }
 
   @override

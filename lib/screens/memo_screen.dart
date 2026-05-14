@@ -71,10 +71,11 @@ class _MemoScreenState extends State<MemoScreen> {
           }),
         );
       } else {
+        final uid = FirebaseAuth.instance.currentUser?.uid;
         await FirebaseFirestore.instance
             .collection('memos')
             .doc(_dateKey)
-            .set({'text': text});
+            .set({'text': text, 'authorUid': uid});
       }
       if (mounted) Navigator.pop(context, text);
     } finally {

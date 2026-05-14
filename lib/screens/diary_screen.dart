@@ -398,6 +398,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
     }
     setState(() => _saving = true);
     try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
       final payload = {
         'me': {
           'topText': _meTopController.text,
@@ -417,6 +418,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
           'meRating': p.meRating,
           'partnerRating': p.partnerRating,
         }).toList(),
+        'authorUid': uid,
       };
 
       if (kIsWeb) {
