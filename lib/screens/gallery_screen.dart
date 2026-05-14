@@ -71,18 +71,20 @@ class _GalleryScreenState extends State<GalleryScreen> {
   Future<void> _downloadAll() async {
     if (_photos.isEmpty) return;
     setState(() { _downloading = true; _downloadProgress = 0; });
-    String? lastSavedPath;
     try {
-      for (int i = 0; i < _photos.length; i++) {
-        final filename = '${_dateKey}_${i + 1}.jpg';
-        lastSavedPath = await downloadFile(_photos[i].url, filename);
-        if (mounted) setState(() => _downloadProgress = i + 1);
-        await Future.delayed(const Duration(milliseconds: 300));
-      }
+      final files = _photos.asMap().entries
+          .map((e) => (url: e.value.url, filename: '${_dateKey}_${e.key + 1}.jpg'))
+          .toList();
+      final result = await downloadAll(
+        files,
+        onProgress: (done, total) {
+          if (mounted) setState(() => _downloadProgress = done);
+        },
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(lastSavedPath != null && lastSavedPath.contains('/')
-              ? '${_photos.length}장 저장 완료!\n$lastSavedPath'
+          content: Text(result.contains('/')
+              ? '${_photos.length}장 저장 완료!\n$result'
               : '${_photos.length}장 다운로드 완료!'),
           backgroundColor: const Color(0xFFE91E63),
           behavior: SnackBarBehavior.floating,
