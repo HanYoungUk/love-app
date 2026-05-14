@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import 'package:http/http.dart' as http;
 import 'diary_screen.dart';
 import 'login_screen.dart';
 import 'memo_screen.dart';
+import 'bucket_list_screen.dart';
 import '../utils/app_routes.dart';
 
 const _projectId = 'love-app-4e2ac';
@@ -115,14 +117,10 @@ class _AdminPanelState extends State<_AdminPanel> {
     try {
       final token = await _token();
       if (token == null) return;
-
-      // Firestore 문서 삭제
       await http.delete(
         Uri.parse('$_fsBase/users/$uid'),
         headers: {'Authorization': 'Bearer $token'},
       );
-
-      // Firebase Auth 계정 삭제 (Cloud Function)
       await http.post(
         Uri.parse('https://us-central1-love-app-4e2ac.cloudfunctions.net/deleteAuthUser'),
         headers: {
@@ -131,7 +129,6 @@ class _AdminPanelState extends State<_AdminPanel> {
         },
         body: jsonEncode({'uid': uid}),
       );
-
       await _load();
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -276,12 +273,14 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _photoUrl;
   bool _uploading = false;
   bool _photoError = false;
-  final DateTime _anniversaryDate = DateTime(2026, 4, 26);
+  DateTime _startDate = DateTime(2026, 4, 26);
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   Set<String> _diaryDates = {};
   Map<String, String> _milestones = {};
   Map<String, String> _memos = {};
+  StreamSubscription? _heartSub;
+  bool _heartAnimating = false;
 
   String _toKey(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
@@ -290,7 +289,15 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadAll();
+    _loadStartDate();
     _computeMilestones();
+    _listenHearts();
+  }
+
+  @override
+  void dispose() {
+    _heartSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadAll() async {
@@ -302,25 +309,123 @@ class _HomeScreenState extends State<HomeScreen> {
     ]);
   }
 
-  void _computeMilestones() {
-    final start = DateTime(_anniversaryDate.year, _anniversaryDate.month, _anniversaryDate.day);
-    final map = <String, String>{};
+  // ── 시작 날짜 ────────────────────────────────────────────────
+  Future<void> _loadStartDate() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('settings')
+          .doc('couple')
+          .get();
+      if (doc.exists && mounted) {
+        final ts = doc.data()?['startDate'] as Timestamp?;
+        if (ts != null) {
+          setState(() => _startDate = ts.toDate());
+          _computeMilestones();
+        }
+      }
+    } catch (_) {}
+  }
 
-    // 100일 단위 (100~1000일, 2000일, 3000일)
+  Future<void> _changeStartDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _startDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      helpText: '사귄 날짜 선택',
+    );
+    if (picked == null || !mounted) return;
+    try {
+      await FirebaseFirestore.instance.collection('settings').doc('couple').set(
+        {'startDate': Timestamp.fromDate(picked)},
+        SetOptions(merge: true),
+      );
+      setState(() => _startDate = picked);
+      _computeMilestones();
+    } catch (_) {}
+  }
+
+  // ── 하트 ────────────────────────────────────────────────────
+  void _listenHearts() {
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    final appStart = Timestamp.now();
+    _heartSub = FirebaseFirestore.instance
+        .collection('hearts')
+        .snapshots()
+        .listen((snap) {
+      for (final change in snap.docChanges) {
+        if (change.type == DocumentChangeType.added) {
+          final data = change.doc.data();
+          final sentBy = data?['sentBy'] as String?;
+          final sentAt = data?['sentAt'] as Timestamp?;
+          if (sentBy != null &&
+              sentBy != currentUid &&
+              sentAt != null &&
+              sentAt.compareTo(appStart) >= 0) {
+            if (mounted) _showHeartAnimation();
+          }
+        }
+      }
+    });
+  }
+
+  Future<void> _sendHeart() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      await FirebaseFirestore.instance.collection('hearts').add({
+        'sentBy': user.uid,
+        'sentAt': FieldValue.serverTimestamp(),
+      });
+      _showHeartAnimation();
+    } catch (_) {}
+  }
+
+  void _showHeartAnimation() {
+    if (_heartAnimating) return;
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (_) => _HeartBurst(onDone: () {
+        entry.remove();
+        if (mounted) setState(() => _heartAnimating = false);
+      }),
+    );
+    setState(() => _heartAnimating = true);
+    overlay.insert(entry);
+  }
+
+  // ── 다음 기념일 ──────────────────────────────────────────────
+  ({String label, int daysLeft})? _nextMilestone() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    String? nearestLabel;
+    int nearestDays = 999999;
+    for (final entry in _milestones.entries) {
+      final parts = entry.key.split('-');
+      final date = DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+      final diff = date.difference(today).inDays;
+      if (diff > 0 && diff < nearestDays) {
+        nearestDays = diff;
+        nearestLabel = entry.value;
+      }
+    }
+    if (nearestLabel == null) return null;
+    return (label: nearestLabel, daysLeft: nearestDays);
+  }
+
+  void _computeMilestones() {
+    final start = DateTime(_startDate.year, _startDate.month, _startDate.day);
+    final map = <String, String>{};
     for (final d in [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 3000]) {
       final date = start.add(Duration(days: d - 1));
       map[_toKey(date)] = '${d}일';
     }
-
-    // 주년 (1~10년)
     for (int y = 1; y <= 10; y++) {
       final date = DateTime(start.year + y, start.month, start.day);
-      final key = _toKey(date);
-      // 주년이 이미 100일 단위와 겹치면 주년 우선
-      map[key] = '${y}주년';
+      map[_toKey(date)] = '${y}주년';
     }
-
-    setState(() => _milestones = map);
+    if (mounted) setState(() => _milestones = map);
   }
 
   Future<String?> _getIdToken() async {
@@ -432,14 +537,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadPhoto({bool clearCache = false, String? token}) async {
     final prefs = await SharedPreferences.getInstance();
-
     if (clearCache) {
       await prefs.remove('photo_url');
     } else {
       final cached = prefs.getString('photo_url');
       if (cached != null && mounted) setState(() => _photoUrl = cached);
     }
-
     try {
       String url;
       if (kIsWeb) {
@@ -465,7 +568,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _pickPhoto() async {
     final image = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (image == null) return;
-
     setState(() => _uploading = true);
     try {
       final ref = FirebaseStorage.instance.ref('couple/photo.jpg');
@@ -484,47 +586,68 @@ class _HomeScreenState extends State<HomeScreen> {
   int get _dayCount {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day)
-            .difference(DateTime(_anniversaryDate.year, _anniversaryDate.month, _anniversaryDate.day))
+            .difference(DateTime(_startDate.year, _startDate.month, _startDate.day))
             .inDays +
         1;
   }
 
+  String get _startDateText =>
+      '${_startDate.year}.${_startDate.month.toString().padLeft(2, '0')}.${_startDate.day.toString().padLeft(2, '0')} 시작 ❤️';
+
   @override
   Widget build(BuildContext context) {
+    final isAdmin = FirebaseAuth.instance.currentUser?.email == 'gksdud9685@loveapp.com';
+    final next = _nextMilestone();
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFF6B9D),
-              Color(0xFFE91E63),
-              Color(0xFFC2185B),
-            ],
+            colors: [Color(0xFFFF6B9D), Color(0xFFE91E63), Color(0xFFC2185B)],
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
+              // 헤더
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
                       '우리들의 일기',
                       style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
+                    const Spacer(),
+                    // 버킷리스트 버튼
+                    IconButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        appRoute(const BucketListScreen()),
+                      ),
+                      icon: const Text('🌟', style: TextStyle(fontSize: 22)),
+                      tooltip: '버킷리스트',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    ),
+                    // 하트 보내기 버튼
+                    IconButton(
+                      onPressed: _sendHeart,
+                      icon: const Text('❤️', style: TextStyle(fontSize: 22)),
+                      tooltip: '하트 보내기',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    ),
+                    // 로그아웃 버튼
                     IconButton(
                       onPressed: () async {
                         final prefs = await SharedPreferences.getInstance();
                         await prefs.setBool('auto_login', false);
                         await FirebaseAuth.instance.signOut();
                         if (context.mounted) {
-                          Navigator.of(context).pushReplacement(
-                            appRoute(const LoginScreen()),
-                          );
+                          Navigator.of(context).pushReplacement(appRoute(const LoginScreen()));
                         }
                       },
                       icon: const Icon(Icons.logout, color: Colors.white),
@@ -532,6 +655,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
+
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -542,45 +666,41 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: _uploading ? null : _pickPhoto,
                         child: Center(
                           child: _photoUrl != null
-                              ? Stack(
-                                  children: [
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(20),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.15),
-                                            blurRadius: 20,
-                                            offset: const Offset(0, 8),
-                                          ),
-                                        ],
+                              ? Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.15),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 8),
                                       ),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(20),
-                                        child: Image.network(
-                                          _photoUrl!,
-                                          height: 260,
-                                          width: double.infinity,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            if (!_photoError) {
-                                              _photoError = true;
-                                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                                if (mounted) {
-                                                  setState(() => _photoUrl = null);
-                                                  _loadPhoto(clearCache: true);
-                                                }
-                                              });
+                                    ],
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: Image.network(
+                                      _photoUrl!,
+                                      height: 260,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        if (!_photoError) {
+                                          _photoError = true;
+                                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                                            if (mounted) {
+                                              setState(() => _photoUrl = null);
+                                              _loadPhoto(clearCache: true);
                                             }
-                                            return const SizedBox(
-                                              height: 260,
-                                              child: Center(child: CircularProgressIndicator(color: Colors.white)),
-                                            );
-                                          },
-                                        ),
-                                      ),
+                                          });
+                                        }
+                                        return const SizedBox(
+                                          height: 260,
+                                          child: Center(child: CircularProgressIndicator(color: Colors.white)),
+                                        );
+                                      },
                                     ),
-                                  ],
+                                  ),
                                 )
                               : Container(
                                   width: double.infinity,
@@ -611,30 +731,47 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 24),
 
                       // D-day 카드
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              '영욱 ❤️ 소영 사귄 지',
-                              style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 16),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '$_dayCount일',
-                              style: const TextStyle(color: Colors.white, fontSize: 56, fontWeight: FontWeight.bold),
-                            ),
-                            Text(
-                              '2026.04.26 시작 ❤️',
-                              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
-                            ),
-                          ],
+                      GestureDetector(
+                        onLongPress: isAdmin ? _changeStartDate : null,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                '영욱 ❤️ 소영 사귄 지',
+                                style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 16),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '$_dayCount일',
+                                style: const TextStyle(color: Colors.white, fontSize: 56, fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                _startDateText,
+                                style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
+                              ),
+                              if (next != null) ...[
+                                const SizedBox(height: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.25),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    '🎉 ${next.label}까지 ${next.daysLeft}일 남았어요',
+                                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
                       ),
 
@@ -769,9 +906,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       const SizedBox(height: 20),
 
-                      // 관리자 승인 패널 (gksdud486@gmail.com 전용)
-                      if (FirebaseAuth.instance.currentUser?.email == 'gksdud9685@loveapp.com')
-                        _AdminPanel(),
+                      if (isAdmin) _AdminPanel(),
 
                       const SizedBox(height: 20),
                     ],
@@ -780,6 +915,68 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── 하트 애니메이션 ────────────────────────────────────────────
+class _HeartBurst extends StatefulWidget {
+  final VoidCallback onDone;
+  const _HeartBurst({required this.onDone});
+
+  @override
+  State<_HeartBurst> createState() => _HeartBurstState();
+}
+
+class _HeartBurstState extends State<_HeartBurst> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2200));
+    _opacity = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _ctrl, curve: const Interval(0.55, 1.0, curve: Curves.easeIn)),
+    );
+    _ctrl.forward().then((_) => widget.onDone());
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sw = MediaQuery.of(context).size.width;
+    final sh = MediaQuery.of(context).size.height;
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) {
+        final t = _ctrl.value;
+        return Stack(
+          children: [
+            _heart(sw * 0.5 - 40, sh * 0.45 - t * 260, 80, 1.0, t),
+            _heart(sw * 0.3 - 20, sh * 0.52 - t * 200, 50, 0.75, t),
+            _heart(sw * 0.65, sh * 0.50 - t * 220, 55, 0.75, t),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _heart(double left, double top, double size, double alpha, double t) {
+    return Positioned(
+      left: left,
+      top: top,
+      child: IgnorePointer(
+        child: Opacity(
+          opacity: (_opacity.value * alpha).clamp(0.0, 1.0),
+          child: Text('❤️', style: TextStyle(fontSize: size)),
         ),
       ),
     );
