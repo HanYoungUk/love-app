@@ -30,7 +30,7 @@ async function sendToOthers({ authorUid, title, body }) {
   }
 }
 
-// 테스트 알림 전송 (테스트 후 삭제 예정)
+// 테스트 알림 전송
 exports.sendTestNotification = https.onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   try {
@@ -41,12 +41,16 @@ exports.sendTestNotification = https.onRequest(async (req, res) => {
       if (data.fcmToken) tokens.push(data.fcmToken);
     });
     if (tokens.length === 0) {
-      res.json({ success: false, message: '저장된 FCM 토큰이 없어요. 앱에 먼저 로그인하세요.' });
+      res.json({ success: false, message: '저장된 FCM 토큰이 없어요.' });
       return;
     }
+    const title = req.query.title || '💕 알림 테스트';
+    const body = req.query.body || '알림이 정상적으로 작동해요!';
     await admin.messaging().sendEachForMulticast({
       tokens,
-      notification: { title: '💕 알림 테스트', body: '알림이 정상적으로 작동해요!' },
+      notification: { title, body },
+      android: { priority: 'high' },
+      webpush: { notification: { icon: '/icons/Icon-192.png' } },
     });
     res.json({ success: true, sent: tokens.length });
   } catch (e) {
