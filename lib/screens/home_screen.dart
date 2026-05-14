@@ -283,6 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
   StreamSubscription? _heartSub;
   bool _heartAnimating = false;
   OverlayEntry? _heartEntry;
+  bool _showInstallBanner = false;
 
   String _toKey(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
@@ -295,6 +296,18 @@ class _HomeScreenState extends State<HomeScreen> {
     _computeMilestones();
     _listenHearts();
     NotificationService.saveToken();
+    _checkInstallBanner();
+  }
+
+  void _checkInstallBanner() {
+    if (!kIsWeb) return;
+    // 이미 standalone(홈 화면 추가됨) 이면 배너 불필요
+    final isStandalone = Uri.base.toString().contains('?source=pwa') ||
+        (const bool.fromEnvironment('dart.library.html') == false);
+    // JS interop 없이 간단히 SharedPreferences로 dismissed 여부만 확인
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _showInstallBanner = true);
+    });
   }
 
   @override
@@ -616,6 +629,29 @@ class _HomeScreenState extends State<HomeScreen> {
         child: SafeArea(
           child: Column(
             children: [
+              // 홈 화면 추가 안내 배너 (웹일 때만)
+              if (kIsWeb && _showInstallBanner)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  color: Colors.black.withValues(alpha: 0.3),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.add_to_home_screen, color: Colors.white, size: 18),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          '알림을 받으려면 홈 화면에 추가하세요\n(Safari → 공유 → 홈 화면에 추가)',
+                          style: TextStyle(color: Colors.white, fontSize: 12),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => setState(() => _showInstallBanner = false),
+                        child: const Icon(Icons.close, color: Colors.white70, size: 18),
+                      ),
+                    ],
+                  ),
+                ),
               // 헤더
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),

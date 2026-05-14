@@ -30,6 +30,30 @@ async function sendToOthers({ authorUid, title, body }) {
   }
 }
 
+// 테스트 알림 전송 (테스트 후 삭제 예정)
+exports.sendTestNotification = https.onRequest(async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  try {
+    const usersSnap = await admin.firestore().collection('users').get();
+    const tokens = [];
+    usersSnap.forEach(doc => {
+      const data = doc.data();
+      if (data.fcmToken) tokens.push(data.fcmToken);
+    });
+    if (tokens.length === 0) {
+      res.json({ success: false, message: '저장된 FCM 토큰이 없어요. 앱에 먼저 로그인하세요.' });
+      return;
+    }
+    await admin.messaging().sendEachForMulticast({
+      tokens,
+      notification: { title: '💕 알림 테스트', body: '알림이 정상적으로 작동해요!' },
+    });
+    res.json({ success: true, sent: tokens.length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // 관리자 회원 탈퇴
 exports.deleteAuthUser = https.onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', 'https://love-app-4e2ac.web.app');

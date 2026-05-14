@@ -1,13 +1,15 @@
 {
     "name": "영욱 ❤️ 소영",
     "short_name": "Love App",
-    "start_url": ".",
+    "id": "/",
+    "start_url": "/",
     "display": "standalone",
     "background_color": "#E91E63",
     "theme_color": "#E91E63",
     "description": "우리만의 연애 앱",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
+    "scope": "/",
     "icons": [
         {
             "src": "icons/Icon-192.png",
