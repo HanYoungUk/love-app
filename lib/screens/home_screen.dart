@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -284,6 +285,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _heartAnimating = false;
   OverlayEntry? _heartEntry;
   bool _showInstallBanner = false;
+  bool _showNotifBanner = false;
 
   String _toKey(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
@@ -297,6 +299,23 @@ class _HomeScreenState extends State<HomeScreen> {
     _listenHearts();
     NotificationService.saveToken();
     _checkInstallBanner();
+    if (kIsWeb) _checkNotifPermission();
+  }
+
+  Future<void> _checkNotifPermission() async {
+    try {
+      final settings = await FirebaseMessaging.instance.getNotificationSettings();
+      final status = settings.authorizationStatus;
+      if (status == AuthorizationStatus.notDetermined && mounted) {
+        setState(() => _showNotifBanner = true);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _requestNotifPermission() async {
+    setState(() => _showNotifBanner = false);
+    final granted = await NotificationService.requestWebPermission();
+    if (granted) await NotificationService.saveToken();
   }
 
   void _checkInstallBanner() {
@@ -650,6 +669,32 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: const Icon(Icons.close, color: Colors.white70, size: 18),
                       ),
                     ],
+                  ),
+                ),
+              // 알림 허용 배너 (웹, 권한 미설정 시)
+              if (kIsWeb && _showNotifBanner)
+                GestureDetector(
+                  onTap: _requestNotifPermission,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    color: Colors.black.withValues(alpha: 0.35),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.notifications_active, color: Colors.white, size: 18),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            '💕 알림을 받으려면 여기를 탭하세요',
+                            style: TextStyle(color: Colors.white, fontSize: 13),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => setState(() => _showNotifBanner = false),
+                          child: const Icon(Icons.close, color: Colors.white70, size: 18),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               // 헤더

@@ -21,10 +21,9 @@ class NotificationService {
     try {
       if (!kIsWeb) {
         FirebaseMessaging.onBackgroundMessage(_onBackgroundMessage);
+        final messaging = FirebaseMessaging.instance;
+        await messaging.requestPermission(alert: true, badge: true, sound: true);
       }
-
-      final messaging = FirebaseMessaging.instance;
-      await messaging.requestPermission(alert: true, badge: true, sound: true);
 
       FirebaseMessaging.onMessage.listen((message) {
         final notification = message.notification;
@@ -51,6 +50,20 @@ class NotificationService {
         );
       });
     } catch (_) {}
+  }
+
+  // 웹(iOS Safari 포함)에서 사용자 제스처로 호출해야 함
+  static Future<bool> requestWebPermission() async {
+    try {
+      final messaging = FirebaseMessaging.instance;
+      final settings = await messaging.requestPermission(
+        alert: true, badge: true, sound: true,
+      );
+      return settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional;
+    } catch (_) {
+      return false;
+    }
   }
 
   // 로그인 후 홈 화면에서 호출
