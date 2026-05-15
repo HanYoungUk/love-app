@@ -419,6 +419,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
           'partnerRating': p.partnerRating,
         }).toList(),
         'authorUid': uid,
+        'authorEmail': FirebaseAuth.instance.currentUser?.email ?? '',
       };
 
       if (kIsWeb) {

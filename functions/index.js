@@ -61,13 +61,18 @@ exports.deleteAuthUser = https.onRequest(async (req, res) => {
 // 일기 저장 알림
 exports.onDiarySaved = onDocumentWritten('diaries/{dateId}', async (event) => {
   const after = event.data?.after?.data();
-  if (!after) return; // 삭제된 경우 무시
+  if (!after) return;
   const authorUid = after.authorUid;
   if (!authorUid) return;
+  const email = after.authorEmail || '';
+  const username = email.replace('@loveapp.com', '') || '상대방';
+  const dateId = event.params.dateId; // 예: 2026-05-15
+  const [year, month, day] = dateId.split('-');
+  const dateStr = `${parseInt(month)}월 ${parseInt(day)}일`;
   await sendToOthers({
     authorUid,
     title: '💕 일기가 작성됐어요',
-    body: '새 일기를 확인해보세요!',
+    body: `${username}이(가) ${dateStr}에 일기를 작성했어요!`,
   });
 });
 
@@ -77,11 +82,16 @@ exports.onMemoSaved = onDocumentWritten('memos/{dateId}', async (event) => {
   if (!after) return;
   const authorUid = after.authorUid;
   if (!authorUid) return;
+  const email = after.authorEmail || '';
+  const username = email.replace('@loveapp.com', '') || '상대방';
+  const dateId = event.params.dateId;
+  const [year, month, day] = dateId.split('-');
+  const dateStr = `${parseInt(month)}월 ${parseInt(day)}일`;
   const text = after.text || '';
   await sendToOthers({
     authorUid,
     title: '📝 메모가 작성됐어요',
-    body: text.length > 40 ? text.substring(0, 40) + '...' : text || '새 메모를 확인해보세요!',
+    body: `${username}이(가) ${dateStr}에 메모를 남겼어요!`,
   });
 });
 
