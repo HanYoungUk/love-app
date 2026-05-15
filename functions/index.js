@@ -4,6 +4,16 @@ const admin = require('firebase-admin');
 
 admin.initializeApp();
 
+// 이/가 조사 선택 (받침 있으면 '이', 없으면 '가')
+function josa(str, withBatchim, withoutBatchim) {
+  const last = str[str.length - 1];
+  const code = last.charCodeAt(0);
+  if (code >= 0xAC00 && code <= 0xD7A3) {
+    return (code - 0xAC00) % 28 !== 0 ? withBatchim : withoutBatchim;
+  }
+  return withBatchim;
+}
+
 // 상대방 FCM 토큰에 알림 전송
 async function sendToOthers({ authorUid, title, body }) {
   const usersSnap = await admin.firestore().collection('users').get();
@@ -72,7 +82,7 @@ exports.onDiarySaved = onDocumentWritten('diaries/{dateId}', async (event) => {
   await sendToOthers({
     authorUid,
     title: '💕 일기가 작성됐어요',
-    body: `${username}이(가) ${dateStr}에 일기를 작성했어요!`,
+    body: `${username}${josa(username, '이', '가')} ${dateStr}에 일기를 작성했어요!`,
   });
 });
 
@@ -91,7 +101,7 @@ exports.onMemoSaved = onDocumentWritten('memos/{dateId}', async (event) => {
   await sendToOthers({
     authorUid,
     title: '📝 메모가 작성됐어요',
-    body: `${username}이(가) ${dateStr}에 메모를 남겼어요!`,
+    body: `${username}${josa(username, '이', '가')} ${dateStr}에 메모를 남겼어요!`,
   });
 });
 
