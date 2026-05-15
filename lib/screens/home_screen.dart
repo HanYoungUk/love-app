@@ -323,14 +323,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _checkInstallBanner() {
-    if (!kIsWeb) return;
-    // 이미 standalone(홈 화면 추가됨) 이면 배너 불필요
-    final isStandalone = Uri.base.toString().contains('?source=pwa') ||
-        (const bool.fromEnvironment('dart.library.html') == false);
-    // JS interop 없이 간단히 SharedPreferences로 dismissed 여부만 확인
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) setState(() => _showInstallBanner = true);
-    });
+    // 홈 화면 추가 안내 배너 비활성화
   }
 
   @override
