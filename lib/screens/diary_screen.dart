@@ -777,19 +777,44 @@ class _DiaryScreenState extends State<DiaryScreen> {
             padding: const EdgeInsets.only(bottom: 8),
             child: Row(
               children: [
-                SizedBox(
-                  width: 52,
-                  child: TextField(
-                    controller: s.timeController,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                    cursorColor: Colors.white,
-                    keyboardType: TextInputType.datetime,
-                    decoration: InputDecoration(
-                      hintText: '00:00',
-                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
-                      isDense: true,
+                GestureDetector(
+                  onTap: () async {
+                    final current = s.timeController.text;
+                    TimeOfDay initial = TimeOfDay.now();
+                    if (current.length == 5 && current.contains(':')) {
+                      final parts = current.split(':');
+                      initial = TimeOfDay(
+                        hour: int.tryParse(parts[0]) ?? 0,
+                        minute: int.tryParse(parts[1]) ?? 0,
+                      );
+                    }
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: initial,
+                      builder: (context, child) => MediaQuery(
+                        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+                        child: child!,
+                      ),
+                    );
+                    if (picked != null) {
+                      s.timeController.text =
+                          '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                    }
+                  },
+                  child: SizedBox(
+                    width: 52,
+                    child: TextField(
+                      controller: s.timeController,
+                      enabled: false,
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: '00:00',
+                        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                        isDense: true,
+                        disabledBorder: InputBorder.none,
+                      ),
                     ),
                   ),
                 ),
