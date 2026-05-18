@@ -17,6 +17,8 @@ class _GalleryScreenState extends State<GalleryScreen> {
   List<_Photo> _photos = [];
   bool _loading = true;
   bool _uploading = false;
+  int _uploadProgress = 0;
+  int _uploadTotal = 0;
   bool _downloading = false;
   int _downloadProgress = 0;
 
@@ -50,21 +52,21 @@ class _GalleryScreenState extends State<GalleryScreen> {
   }
 
   Future<void> _upload() async {
-    final image = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 75,
-    );
-    if (image == null) return;
-    setState(() => _uploading = true);
+    final images = await ImagePicker().pickMultiImage(imageQuality: 75);
+    if (images.isEmpty) return;
+    setState(() { _uploading = true; _uploadProgress = 0; _uploadTotal = images.length; });
     try {
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final path = '${_prefix}photo_$timestamp.jpg';
-      final ref = FirebaseStorage.instance.ref(path);
-      final bytes = await image.readAsBytes();
-      await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
+      for (final image in images) {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final path = '${_prefix}photo_$timestamp.jpg';
+        final ref = FirebaseStorage.instance.ref(path);
+        final bytes = await image.readAsBytes();
+        await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
+        if (mounted) setState(() => _uploadProgress++);
+      }
       await _loadPhotos();
     } finally {
-      if (mounted) setState(() => _uploading = false);
+      if (mounted) setState(() { _uploading = false; _uploadProgress = 0; _uploadTotal = 0; });
     }
   }
 
@@ -213,13 +215,21 @@ class _GalleryScreenState extends State<GalleryScreen> {
                         tooltip: '전체 다운로드',
                       ),
                     _uploading
-                        ? const Padding(
-                            padding: EdgeInsets.all(12),
-                            child: SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 2),
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(
+                                  width: 16, height: 16,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2),
+                                ),
+                                const SizedBox(width: 6),
+                                Text('$_uploadProgress/$_uploadTotal',
+                                    style: const TextStyle(
+                                        color: Colors.white, fontSize: 12)),
+                              ],
                             ),
                           )
                         : IconButton(
