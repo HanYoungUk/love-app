@@ -14,7 +14,10 @@ import 'diary_screen.dart';
 import 'login_screen.dart';
 import 'memo_screen.dart';
 import 'bucket_list_screen.dart';
+import 'chat_screen.dart';
 import '../utils/app_routes.dart';
+import '../utils/web_notification.dart';
+import '../utils/notif_pref.dart';
 import '../services/notification_service.dart';
 
 const _projectId = 'love-app-4e2ac';
@@ -282,6 +285,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, String> _milestones = {};
   Map<String, String> _memos = {};
   StreamSubscription? _heartSub;
+  StreamSubscription? _msgNotifSub;
+  int _unreadNotif = 0; // 안 읽은 채팅 알림 개수 ("새 메시지 N개")
+  void Function()? _disposeForeground;
   bool _heartAnimating = false;
   OverlayEntry? _heartEntry;
   bool _showInstallBanner = false;
@@ -290,13 +296,118 @@ class _HomeScreenState extends State<HomeScreen> {
   String _toKey(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
+  /// 달력 한 칸: 상단에 날짜(일기 있으면 하트로 감쌈), 하단에 기념일/메모 미리보기
+  Widget _dayCell(DateTime day,
+      {bool outside = false, bool today = false, bool selected = false}) {
+    final key = _toKey(day);
+    final hasDiary = _diaryDates.contains(key);
+    final memo = _memos[key];
+    final milestone = _milestones[key];
+    final numText = '${day.day}';
+
+    // ── 날짜 숫자 ──
+    Widget number;
+    if (hasDiary) {
+      final fill = (selected || today)
+          ? const Color(0xFFE91E63)
+          : const Color(0xFFFF5A79);
+      number = SizedBox(
+        width: 36,
+        height: 33,
+        child: CustomPaint(
+          painter: _HeartPainter(outside ? fill.withValues(alpha: 0.4) : fill),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 3),
+              child: Text(
+                numText,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    } else {
+      Color? bg;
+      Color fg = outside ? Colors.black.withValues(alpha: 0.3) : Colors.black87;
+      if (selected) {
+        bg = const Color(0xFFE91E63);
+        fg = Colors.white;
+      } else if (today) {
+        bg = const Color(0xFFFF6B9D).withValues(alpha: 0.3);
+        fg = const Color(0xFFE91E63);
+      }
+      number = Container(
+        width: 26,
+        height: 26,
+        alignment: Alignment.center,
+        decoration: bg == null ? null : BoxDecoration(color: bg, shape: BoxShape.circle),
+        child: Text(
+          numText,
+          style: TextStyle(
+            fontSize: 13,
+            color: fg,
+            fontWeight: (today || selected) ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 3),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          number,
+          if (milestone != null)
+            _cellChip(milestone, const Color(0xFFFF9800), Colors.white, outside),
+          if (memo != null && memo.trim().isNotEmpty)
+            _cellChip(memo.trim(), const Color(0xFFE1E4F5), const Color(0xFF5C6BC0), outside),
+        ],
+      ),
+    );
+  }
+
+  /// 달력 칸 안의 작은 텍스트 칩 (기념일/메모 미리보기)
+  Widget _cellChip(String text, Color bg, Color fg, bool outside) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+      decoration: BoxDecoration(
+        color: outside ? bg.withValues(alpha: 0.4) : bg,
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 8.5,
+          height: 1.1,
+          fontWeight: FontWeight.w600,
+          color: outside ? fg.withValues(alpha: 0.5) : fg,
+        ),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     _loadAll();
     _loadStartDate();
     _computeMilestones();
+    NotifPref.load(); // 저장된 알림 on/off 설정 불러오기
     _listenHearts();
+    _listenMessageNotifications();
+    // 탭으로 돌아오면(포커스) 안 읽은 알림 카운트 리셋
+    _disposeForeground = installForegroundListener(() => _unreadNotif = 0);
     NotificationService.saveToken();
     _checkInstallBanner();
     if (kIsWeb) _checkNotifPermission();
@@ -329,6 +440,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _heartSub?.cancel();
+    _msgNotifSub?.cancel();
+    _disposeForeground?.call();
     _heartEntry?.remove();
     _heartEntry = null;
     super.dispose();
@@ -399,6 +512,48 @@ class _HomeScreenState extends State<HomeScreen> {
             if (mounted) _showHeartAnimation();
           }
         }
+      }
+    });
+  }
+
+  // ── 채팅 메시지 OS 알림 ───────────────────────────────────────
+  // 상대가 보낸 새 메시지가 오면 브라우저 네이티브 알림(우측 하단 토스트)을 띄운다.
+  // 크롬이 켜져 있으면 다른 화면/다른 탭/최소화 상태에서도 표시.
+  // 내 메시지, 앱 시작 전 옛 메시지, 채팅 화면을 보고 있을 때는 제외.
+  void _listenMessageNotifications() {
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    final appStart = Timestamp.now();
+    _msgNotifSub = FirebaseFirestore.instance
+        .collection('messages')
+        .orderBy('createdAt')
+        .snapshots()
+        .listen((snap) {
+      for (final change in snap.docChanges) {
+        if (change.type != DocumentChangeType.added) continue;
+        final data = change.doc.data();
+        if (data == null) continue;
+        final senderUid = data['senderUid'] as String?;
+        final createdAt = data['createdAt'] as Timestamp?;
+        // 내 메시지 / 시작 전 옛 메시지 제외
+        if (senderUid == null || senderUid == currentUid) continue;
+        if (createdAt == null || createdAt.compareTo(appStart) < 0) continue;
+        // 알림이 꺼져 있으면 띄우지 않음
+        if (!NotifPref.enabled.value) continue;
+        // 채팅 화면을 '실제로 보고 있을 때'만 억제(탭이 포커스 상태).
+        // 탭이 백그라운드/최소화면 채팅 화면이어도 알림을 띄운다.
+        if (ChatScreen.isOpen && webPageFocused()) {
+          _unreadNotif = 0; // 보고 있으니 쌓인 카운트 정리
+          continue;
+        }
+        _unreadNotif++;
+        // 같은 tag로 토스트 1개에 합치고, 2개부터 "새 메시지 N개"로 표시.
+        // 내용은 노출하지 않고 '메시지가 도착했습니다'만 표시.
+        showWebNotification(
+          title: _unreadNotif == 1 ? '새로운 메시지' : '새 메시지 $_unreadNotif개',
+          body: '메시지가 도착했습니다',
+          icon: 'icons/Icon-192.png',
+          tag: 'love-chat',
+        );
       }
     });
   }
@@ -704,6 +859,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                     const Spacer(),
+                    // 채팅 버튼
+                    IconButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        appRoute(const ChatScreen()),
+                      ),
+                      icon: const Text('💬', style: TextStyle(fontSize: 22)),
+                      tooltip: '채팅',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    ),
                     // 버킷리스트 버튼
                     IconButton(
                       onPressed: () => Navigator.push(
@@ -913,52 +1079,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                 });
                               });
                             },
-                            eventLoader: (day) {
-                              final key = _toKey(day);
-                              final events = <String>[];
-                              if (_diaryDates.contains(key)) events.add('diary');
-                              if (_milestones.containsKey(key)) events.add('milestone:${_milestones[key]}');
-                              if (_memos.containsKey(key)) events.add('memo');
-                              return events;
-                            },
+                            rowHeight: 64,
                             calendarBuilders: CalendarBuilders(
-                              markerBuilder: (context, day, events) {
-                                if (events.isEmpty) return const SizedBox.shrink();
-                                final hasDiary = events.contains('diary');
-                                final hasMemo = events.contains('memo');
-                                final milestoneEvent = events.cast<String>().firstWhere(
-                                  (e) => e.startsWith('milestone:'), orElse: () => '');
-                                final label = milestoneEvent.isNotEmpty
-                                    ? milestoneEvent.substring(10) : null;
-                                return Positioned(
-                                  bottom: 2,
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      if (label != null)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFFF9800),
-                                            borderRadius: BorderRadius.circular(6),
-                                          ),
-                                          child: Text(label,
-                                              style: const TextStyle(
-                                                  fontSize: 9,
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.bold)),
-                                        ),
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          if (hasDiary) const Text('❤️', style: TextStyle(fontSize: 11)),
-                                          if (hasMemo) const Text('📝', style: TextStyle(fontSize: 10)),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
+                              defaultBuilder: (context, day, _) => _dayCell(day),
+                              outsideBuilder: (context, day, _) => _dayCell(day, outside: true),
+                              todayBuilder: (context, day, _) => _dayCell(day, today: true),
+                              selectedBuilder: (context, day, _) => _dayCell(day, selected: true),
                             ),
                             calendarStyle: CalendarStyle(
                               defaultTextStyle: const TextStyle(color: Colors.black87),
@@ -1002,6 +1128,33 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
+
+// ── 달력 일기 날짜용 하트 도형 ──────────────────────────────────
+class _HeartPainter extends CustomPainter {
+  final Color color;
+  const _HeartPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true;
+    final path = Path()
+      ..moveTo(0.5 * w, h * 0.32)
+      ..cubicTo(0.5 * w, h * 0.12, 0.16 * w, h * 0.05, 0.06 * w, h * 0.32)
+      ..cubicTo(-0.05 * w, h * 0.62, 0.32 * w, h * 0.86, 0.5 * w, h)
+      ..cubicTo(0.68 * w, h * 0.86, 1.05 * w, h * 0.62, 0.94 * w, h * 0.32)
+      ..cubicTo(0.84 * w, h * 0.05, 0.5 * w, h * 0.12, 0.5 * w, h * 0.32)
+      ..close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_HeartPainter old) => old.color != color;
 }
 
 // ── 하트 애니메이션 ────────────────────────────────────────────

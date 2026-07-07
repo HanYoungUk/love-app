@@ -128,3 +128,4 @@ exports.onHeartSent = onDocumentCreated('hearts/{docId}', async (event) => {
     body: '상대방이 하트를 보냈어요 💕',
   });
 });
+
