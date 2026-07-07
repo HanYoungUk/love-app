@@ -357,23 +357,29 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 3),
+    // 하트(33)/일반 숫자(26) 높이가 달라도 메모 시작 위치가 같도록 슬롯 고정
+    number = SizedBox(height: 34, child: Center(child: number));
+
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 4),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           number,
           if (milestone != null)
-            _cellChip(milestone, const Color(0xFFFF9800), Colors.white, outside),
+            _cellChip(milestone, const Color(0xFFFF9800), Colors.white, outside, maxLines: 1),
           if (memo != null && memo.trim().isNotEmpty)
-            _cellChip(memo.trim(), const Color(0xFFE1E4F5), const Color(0xFF5C6BC0), outside),
+            _cellChip(memo.trim(), const Color(0xFFE1E4F5), const Color(0xFF5C6BC0), outside, maxLines: 6),
         ],
+      ),
       ),
     );
   }
 
   /// 달력 칸 안의 작은 텍스트 칩 (기념일/메모 미리보기)
-  Widget _cellChip(String text, Color bg, Color fg, bool outside) {
+  Widget _cellChip(String text, Color bg, Color fg, bool outside, {int maxLines = 1}) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(top: 2),
@@ -384,12 +390,12 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Text(
         text,
-        maxLines: 1,
+        maxLines: maxLines,
         overflow: TextOverflow.ellipsis,
         textAlign: TextAlign.center,
         style: TextStyle(
-          fontSize: 8.5,
-          height: 1.1,
+          fontSize: 9,
+          height: 1.15,
           fontWeight: FontWeight.w600,
           color: outside ? fg.withValues(alpha: 0.5) : fg,
         ),
@@ -1079,7 +1085,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 });
                               });
                             },
-                            rowHeight: 64,
+                            rowHeight: 104,
                             calendarBuilders: CalendarBuilders(
                               defaultBuilder: (context, day, _) => _dayCell(day),
                               outsideBuilder: (context, day, _) => _dayCell(day, outside: true),
