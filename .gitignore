@@ -52,3 +52,6 @@ functions/node_modules/
 # Secrets (API keys)
 env.json
 android/app/google-services.json
+
+# 배포용 APK (54MB) - web/ 에 두면 flutter build web 시 자동으로 build/web 에 복사된다
+web/*.apk
