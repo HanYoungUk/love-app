@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
+import '../theme/app_theme.dart';
 
 const _projectId = 'love-app-4e2ac';
 
@@ -110,11 +111,11 @@ class _MemoScreenState extends State<MemoScreen> {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFFF6B9D), Color(0xFFE91E63), Color(0xFFC2185B)],
+            colors: [AppTheme.light, AppTheme.primary, AppTheme.dark],
           ),
         ),
         child: SafeArea(
@@ -249,7 +250,7 @@ class _MemoScreenState extends State<MemoScreen> {
                                       color: Colors.white),
                                 ),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFE91E63),
+                                  backgroundColor: AppTheme.primary,
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14)),
                                   padding:

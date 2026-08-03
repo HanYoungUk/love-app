@@ -19,6 +19,8 @@ import '../utils/app_routes.dart';
 import '../utils/web_notification.dart';
 import '../utils/notif_pref.dart';
 import '../services/notification_service.dart';
+import '../theme/app_theme.dart';
+import '../theme/theme_picker.dart';
 
 const _projectId = 'love-app-4e2ac';
 const _storageBucket = 'love-app-4e2ac.firebasestorage.app';
@@ -174,7 +176,7 @@ class _AdminPanelState extends State<_AdminPanel> {
         children: [
           Row(
             children: [
-              const Icon(Icons.admin_panel_settings, color: Color(0xFFE91E63)),
+              Icon(Icons.admin_panel_settings, color: AppTheme.primary),
               const SizedBox(width: 8),
               Text(
                 '회원 관리 (${_users.length}명)',
@@ -187,7 +189,7 @@ class _AdminPanelState extends State<_AdminPanel> {
               const Spacer(),
               IconButton(
                 onPressed: _load,
-                icon: const Icon(Icons.refresh, color: Color(0xFFE91E63), size: 20),
+                icon: Icon(Icons.refresh, color: AppTheme.primary, size: 20),
               ),
             ],
           ),
@@ -235,7 +237,7 @@ class _AdminPanelState extends State<_AdminPanel> {
                     TextButton(
                       onPressed: () => _approve(uid),
                       style: TextButton.styleFrom(
-                        backgroundColor: const Color(0xFFE91E63),
+                        backgroundColor: AppTheme.primary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         minimumSize: Size.zero,
@@ -309,8 +311,8 @@ class _HomeScreenState extends State<HomeScreen> {
     Widget number;
     if (hasDiary) {
       final fill = (selected || today)
-          ? const Color(0xFFE91E63)
-          : const Color(0xFFFF5A79);
+          ? AppTheme.primary
+          : AppTheme.mid;
       number = SizedBox(
         width: 36,
         height: 33,
@@ -335,11 +337,11 @@ class _HomeScreenState extends State<HomeScreen> {
       Color? bg;
       Color fg = outside ? Colors.black.withValues(alpha: 0.3) : Colors.black87;
       if (selected) {
-        bg = const Color(0xFFE91E63);
+        bg = AppTheme.primary;
         fg = Colors.white;
       } else if (today) {
-        bg = const Color(0xFFFF6B9D).withValues(alpha: 0.3);
-        fg = const Color(0xFFE91E63);
+        bg = AppTheme.light.withValues(alpha: 0.3);
+        fg = AppTheme.primary;
       }
       number = Container(
         width: 26,
@@ -796,11 +798,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFFF6B9D), Color(0xFFE91E63), Color(0xFFC2185B)],
+            colors: [AppTheme.light, AppTheme.primary, AppTheme.dark],
           ),
         ),
         child: SafeArea(
@@ -884,6 +886,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       icon: const Text('🌟', style: TextStyle(fontSize: 22)),
                       tooltip: '버킷리스트',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    ),
+                    // 테마 색상 버튼
+                    IconButton(
+                      onPressed: () => showThemePicker(context),
+                      icon: const Text('🎨', style: TextStyle(fontSize: 22)),
+                      tooltip: '테마 색상',
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                     ),
@@ -1097,11 +1107,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               weekendTextStyle: const TextStyle(color: Colors.black87),
                               outsideTextStyle: TextStyle(color: Colors.black.withValues(alpha: 0.3)),
                               todayDecoration: BoxDecoration(
-                                color: const Color(0xFFFF6B9D).withValues(alpha: 0.3),
+                                color: AppTheme.light.withValues(alpha: 0.3),
                                 shape: BoxShape.circle,
                               ),
-                              todayTextStyle: const TextStyle(color: Color(0xFFE91E63), fontWeight: FontWeight.bold),
-                              selectedDecoration: const BoxDecoration(color: Color(0xFFE91E63), shape: BoxShape.circle),
+                              todayTextStyle: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold),
+                              selectedDecoration: BoxDecoration(color: AppTheme.primary, shape: BoxShape.circle),
                               selectedTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                             ),
                             headerStyle: const HeaderStyle(

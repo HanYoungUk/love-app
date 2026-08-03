@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../theme/app_theme.dart';
 
 class BucketListScreen extends StatefulWidget {
   const BucketListScreen({super.key});
@@ -78,11 +79,11 @@ class _BucketListScreenState extends State<BucketListScreen> {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFFF6B9D), Color(0xFFE91E63), Color(0xFFC2185B)],
+            colors: [AppTheme.light, AppTheme.primary, AppTheme.dark],
           ),
         ),
         child: SafeArea(
@@ -257,9 +258,9 @@ class _BucketListScreenState extends State<BucketListScreen> {
                                           height: 26,
                                           decoration: BoxDecoration(
                                             shape: BoxShape.circle,
-                                            color: isDone ? const Color(0xFFE91E63) : Colors.transparent,
+                                            color: isDone ? AppTheme.primary : Colors.transparent,
                                             border: Border.all(
-                                              color: isDone ? const Color(0xFFE91E63) : Colors.grey.shade300,
+                                              color: isDone ? AppTheme.primary : Colors.grey.shade300,
                                               width: 2,
                                             ),
                                           ),

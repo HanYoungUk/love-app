@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 // 백그라운드 메시지 핸들러 (최상위 함수여야 함)
 @pragma('vm:entry-point')
@@ -42,7 +43,7 @@ class NotificationService {
                   Text(notification.body!),
               ],
             ),
-            backgroundColor: const Color(0xFFE91E63),
+            backgroundColor: AppTheme.primary,
             duration: const Duration(seconds: 4),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

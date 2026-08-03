@@ -8,6 +8,7 @@ import 'home_screen.dart';
 import 'pending_screen.dart';
 import 'register_screen.dart';
 import '../utils/app_routes.dart';
+import '../theme/app_theme.dart';
 
 const _ownerEmail = 'gksdud9685@loveapp.com';
 const _domain = '@loveapp.com';
@@ -83,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.red : const Color(0xFFE91E63),
+        backgroundColor: isError ? Colors.red : AppTheme.primary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
@@ -165,14 +166,14 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFFF6B9D),
-              Color(0xFFE91E63),
-              Color(0xFFC2185B),
+              AppTheme.light,
+              AppTheme.primary,
+              AppTheme.dark,
             ],
           ),
         ),
@@ -199,10 +200,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.favorite,
                       size: 48,
-                      color: Color(0xFFE91E63),
+                      color: AppTheme.primary,
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -259,9 +260,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             decoration: InputDecoration(
                               labelText: '아이디',
                               hintText: '사용할 아이디를 입력하세요',
-                              prefixIcon: const Icon(
+                              prefixIcon: Icon(
                                 Icons.person_outline,
-                                color: Color(0xFFE91E63),
+                                color: AppTheme.primary,
                               ),
                               filled: true,
                               fillColor: const Color(0xFFF8F8F8),
@@ -271,8 +272,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFE91E63),
+                                borderSide: BorderSide(
+                                  color: AppTheme.primary,
                                   width: 2,
                                 ),
                               ),
@@ -312,9 +313,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             decoration: InputDecoration(
                               labelText: '비밀번호',
                               hintText: '6자 이상 입력하세요',
-                              prefixIcon: const Icon(
+                              prefixIcon: Icon(
                                 Icons.lock_outline,
-                                color: Color(0xFFE91E63),
+                                color: AppTheme.primary,
                               ),
                               suffixIcon: IconButton(
                                 icon: Icon(
@@ -335,8 +336,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFE91E63),
+                                borderSide: BorderSide(
+                                  color: AppTheme.primary,
                                   width: 2,
                                 ),
                               ),
@@ -376,7 +377,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 child: Checkbox(
                                   value: _autoLogin,
                                   onChanged: (v) => setState(() => _autoLogin = v ?? false),
-                                  activeColor: const Color(0xFFE91E63),
+                                  activeColor: AppTheme.primary,
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                                 ),
                               ),
@@ -399,10 +400,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _login,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFE91E63),
+                                backgroundColor: AppTheme.primary,
                                 foregroundColor: Colors.white,
                                 disabledBackgroundColor:
-                                    const Color(0xFFE91E63).withValues(alpha: 0.6),
+                                    AppTheme.primary.withValues(alpha: 0.6),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
@@ -442,9 +443,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                         appRoute(const RegisterScreen()),
                                       ),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFFE91E63),
-                                side: const BorderSide(
-                                  color: Color(0xFFE91E63),
+                                foregroundColor: AppTheme.primary,
+                                side: BorderSide(
+                                  color: AppTheme.primary,
                                   width: 2,
                                 ),
                                 shape: RoundedRectangleBorder(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import '../utils/download_helper.dart';
+import '../theme/app_theme.dart';
 
 // ─── 갤러리 화면 ─────────────────────────────────────────
 
@@ -88,7 +89,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
           content: Text(result.contains('/')
               ? '${_photos.length}장 저장 완료!\n$result'
               : '${_photos.length}장 다운로드 완료!'),
-          backgroundColor: const Color(0xFFE91E63),
+          backgroundColor: AppTheme.primary,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ));
@@ -147,11 +148,11 @@ class _GalleryScreenState extends State<GalleryScreen> {
     final d = widget.date;
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFFF6B9D), Color(0xFFE91E63), Color(0xFFC2185B)],
+            colors: [AppTheme.light, AppTheme.primary, AppTheme.dark],
           ),
         ),
         child: SafeArea(
@@ -252,9 +253,9 @@ class _GalleryScreenState extends State<GalleryScreen> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: _loading
-                      ? const Center(
+                      ? Center(
                           child: CircularProgressIndicator(
-                              color: Color(0xFFE91E63)))
+                              color: AppTheme.primary))
                       : _photos.isEmpty
                           ? _buildEmpty()
                           : ClipRRect(
@@ -277,10 +278,10 @@ class _GalleryScreenState extends State<GalleryScreen> {
                                       if (progress == null) return child;
                                       return Container(
                                         color: Colors.grey.shade100,
-                                        child: const Center(
+                                        child: Center(
                                           child: CircularProgressIndicator(
                                               strokeWidth: 2,
-                                              color: Color(0xFFE91E63)),
+                                              color: AppTheme.primary),
                                         ),
                                       );
                                     },
@@ -369,7 +370,7 @@ class _PhotoViewerState extends State<_PhotoViewer> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: const Text('다운로드 완료!'),
-          backgroundColor: const Color(0xFFE91E63),
+          backgroundColor: AppTheme.primary,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ));

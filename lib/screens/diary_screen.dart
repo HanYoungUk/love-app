@@ -10,6 +10,7 @@ import '../services/kakao_service.dart';
 import '../utils/open_url.dart';
 import '../utils/app_routes.dart';
 import 'gallery_screen.dart';
+import '../theme/app_theme.dart';
 
 const _fsProject = 'love-app-4e2ac';
 const _fsBase = 'https://firestore.googleapis.com/v1/projects/$_fsProject/databases/(default)/documents';
@@ -441,9 +442,9 @@ class _DiaryScreenState extends State<DiaryScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
               content: Text('저장됐어요 💕'),
-              backgroundColor: Color(0xFFE91E63)),
+              backgroundColor: AppTheme.primary),
         );
       }
 
@@ -660,7 +661,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
           }
 
           return AlertDialog(
-            backgroundColor: const Color(0xFFC2185B),
+            backgroundColor: AppTheme.dark,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: const Text('장소 검색', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
             content: SizedBox(
@@ -1011,14 +1012,14 @@ class _DiaryScreenState extends State<DiaryScreen> {
       },
       child: Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFFF6B9D),
-              Color(0xFFE91E63),
-              Color(0xFFC2185B),
+              AppTheme.light,
+              AppTheme.primary,
+              AppTheme.dark,
             ],
           ),
         ),
@@ -1114,7 +1115,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                               '영욱 💕',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: _showMe ? const Color(0xFFE91E63) : Colors.white,
+                                color: _showMe ? AppTheme.primary : Colors.white,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
                               ),
@@ -1136,7 +1137,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                               '소영 💕',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: !_showMe ? const Color(0xFFE91E63) : Colors.white,
+                                color: !_showMe ? AppTheme.primary : Colors.white,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
                               ),

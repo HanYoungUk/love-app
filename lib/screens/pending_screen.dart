@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'home_screen.dart';
 import 'login_screen.dart';
+import '../theme/app_theme.dart';
 
 class PendingScreen extends StatefulWidget {
   const PendingScreen({super.key});
@@ -56,11 +57,11 @@ class _PendingScreenState extends State<PendingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFFF6B9D), Color(0xFFE91E63), Color(0xFFC2185B)],
+            colors: [AppTheme.light, AppTheme.primary, AppTheme.dark],
           ),
         ),
         child: SafeArea(

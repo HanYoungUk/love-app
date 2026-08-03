@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'pending_screen.dart';
+import '../theme/app_theme.dart';
 
 const _ownerEmail = 'gksdud9685@loveapp.com';
 const _domain = '@loveapp.com';
@@ -38,7 +39,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.red : const Color(0xFFE91E63),
+        backgroundColor: isError ? Colors.red : AppTheme.primary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
@@ -156,14 +157,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFFF6B9D),
-              Color(0xFFE91E63),
-              Color(0xFFC2185B),
+              AppTheme.light,
+              AppTheme.primary,
+              AppTheme.dark,
             ],
           ),
         ),
@@ -232,7 +233,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   decoration: InputDecoration(
                                     labelText: '아이디',
                                     hintText: '사용할 아이디를 입력하세요',
-                                    prefixIcon: const Icon(Icons.person_outline, color: Color(0xFFE91E63)),
+                                    prefixIcon: Icon(Icons.person_outline, color: AppTheme.primary),
                                     filled: true,
                                     fillColor: const Color(0xFFF8F8F8),
                                     border: OutlineInputBorder(
@@ -241,7 +242,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(14),
-                                      borderSide: const BorderSide(color: Color(0xFFE91E63), width: 2),
+                                      borderSide: BorderSide(color: AppTheme.primary, width: 2),
                                     ),
                                     errorBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(14),
@@ -268,7 +269,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   decoration: InputDecoration(
                                     labelText: '비밀번호',
                                     hintText: '6자 이상 입력하세요',
-                                    prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFFE91E63)),
+                                    prefixIcon: Icon(Icons.lock_outline, color: AppTheme.primary),
                                     suffixIcon: IconButton(
                                       icon: Icon(
                                         _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
@@ -284,7 +285,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(14),
-                                      borderSide: const BorderSide(color: Color(0xFFE91E63), width: 2),
+                                      borderSide: BorderSide(color: AppTheme.primary, width: 2),
                                     ),
                                     errorBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(14),
@@ -310,7 +311,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   decoration: InputDecoration(
                                     labelText: '비밀번호 확인',
                                     hintText: '비밀번호를 한 번 더 입력하세요',
-                                    prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFFE91E63)),
+                                    prefixIcon: Icon(Icons.lock_outline, color: AppTheme.primary),
                                     suffixIcon: IconButton(
                                       icon: Icon(
                                         _obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
@@ -326,7 +327,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(14),
-                                      borderSide: const BorderSide(color: Color(0xFFE91E63), width: 2),
+                                      borderSide: BorderSide(color: AppTheme.primary, width: 2),
                                     ),
                                     errorBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(14),
@@ -352,9 +353,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   child: ElevatedButton(
                                     onPressed: _isLoading ? null : _register,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFFE91E63),
+                                      backgroundColor: AppTheme.primary,
                                       foregroundColor: Colors.white,
-                                      disabledBackgroundColor: const Color(0xFFE91E63).withValues(alpha: 0.6),
+                                      disabledBackgroundColor: AppTheme.primary.withValues(alpha: 0.6),
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                       elevation: 0,
                                     ),

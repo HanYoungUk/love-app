@@ -5,6 +5,7 @@ import 'firebase_options.dart';
 import 'screens/login_screen.dart';
 import 'services/kakao_service.dart';
 import 'services/notification_service.dart';
+import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,6 +14,7 @@ void main() async {
   );
 
   await NotificationService.init();
+  await AppTheme.load();
 
   // 카카오 OAuth 콜백 감지 (웹에서 code 파라미터 확인)
   if (kIsWeb) {
@@ -29,18 +31,24 @@ class LoveApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Love App',
-      debugShowCheckedModeBanner: false,
-      scaffoldMessengerKey: NotificationService.scaffoldKey,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFE91E63),
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-      ),
-      home: const LoginScreen(),
+    // 테마가 바뀌면 앱 전체(열려 있는 화면 포함)를 다시 그린다.
+    return ValueListenableBuilder<AppPalette>(
+      valueListenable: AppTheme.current,
+      builder: (context, palette, _) {
+        return MaterialApp(
+          title: 'Love App',
+          debugShowCheckedModeBanner: false,
+          scaffoldMessengerKey: NotificationService.scaffoldKey,
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: palette.primary,
+              brightness: Brightness.light,
+            ),
+            useMaterial3: true,
+          ),
+          home: const LoginScreen(),
+        );
+      },
     );
   }
 }
