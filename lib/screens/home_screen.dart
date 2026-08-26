@@ -16,6 +16,7 @@ import 'memo_screen.dart';
 import 'bucket_list_screen.dart';
 import 'chat_screen.dart';
 import '../utils/app_routes.dart';
+import '../utils/device_lock.dart';
 import '../utils/web_notification.dart';
 import '../utils/notif_pref.dart';
 import '../services/notification_service.dart';
@@ -288,6 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, String> _memos = {};
   StreamSubscription? _heartSub;
   StreamSubscription? _msgNotifSub;
+  StreamSubscription? _deviceSub;
   int _unreadNotif = 0; // 안 읽은 채팅 알림 개수 ("새 메시지 N개")
   void Function()? _disposeForeground;
   bool _heartAnimating = false;
@@ -414,6 +416,7 @@ class _HomeScreenState extends State<HomeScreen> {
     NotifPref.load(); // 저장된 알림 on/off 설정 불러오기
     _listenHearts();
     _listenMessageNotifications();
+    _watchDeviceLock();
     // 탭으로 돌아오면(포커스) 안 읽은 알림 카운트 리셋
     _disposeForeground = installForegroundListener(() => _unreadNotif = 0);
     NotificationService.saveToken();
@@ -449,6 +452,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _heartSub?.cancel();
     _msgNotifSub?.cancel();
+    _deviceSub?.cancel();
     _disposeForeground?.call();
     _heartEntry?.remove();
     _heartEntry = null;
@@ -501,6 +505,48 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ── 하트 ────────────────────────────────────────────────────
+  /// 계정 주인이 다른 폰으로 넘어갔는지 지켜본다.
+  ///
+  /// 새 폰에서 로그인하면 users 문서의 deviceId가 그 폰 것으로 바뀐다.
+  /// 이쪽은 그걸 보고 스스로 물러난다. 웹은 제한 대상이 아니라 그냥 넘어간다.
+  void _watchDeviceLock() {
+    if (kIsWeb) return;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    _deviceSub = FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .snapshots()
+        .listen((doc) async {
+      // 오프라인일 때 캐시에 남아 있던 옛 값으로 애먼 로그아웃을 하지 않게
+      if (doc.metadata.isFromCache) return;
+      final owner = doc.data()?['deviceId'] as String?;
+      if (await DeviceLock.isMine(owner)) return;
+      await _kickedOut();
+    });
+  }
+
+  /// 다른 폰에 자리를 내주고 로그인 화면으로 돌아간다.
+  Future<void> _kickedOut() async {
+    // 두 번 불리면 화면이 두 번 튕기므로 감시부터 끊는다
+    await _deviceSub?.cancel();
+    _deviceSub = null;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('auto_login', false);
+    await FirebaseAuth.instance.signOut();
+    if (!mounted) return;
+    // 채팅이 위에 열려 있을 수 있어서 쌓인 화면을 전부 걷어낸다
+    Navigator.of(context, rootNavigator: true)
+        .pushAndRemoveUntil(appRoute(const LoginScreen()), (_) => false);
+    NotificationService.scaffoldKey.currentState?.showSnackBar(
+      const SnackBar(
+        content: Text('다른 기기에서 로그인되어 로그아웃되었어요'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   void _listenHearts() {
     final currentUid = FirebaseAuth.instance.currentUser?.uid;
     final appStart = Timestamp.now();

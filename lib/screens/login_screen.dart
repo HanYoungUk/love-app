@@ -10,6 +10,7 @@ import 'home_screen.dart';
 import 'pending_screen.dart';
 import 'register_screen.dart';
 import '../utils/app_routes.dart';
+import '../utils/device_lock.dart';
 import '../utils/direct_chat_pref.dart';
 import '../theme/app_theme.dart';
 
@@ -62,6 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
     try {
       bool approved = true;
+      String? ownerDevice;
       try {
         final token = await user.getIdToken();
         final res = await http
@@ -77,8 +79,27 @@ class _LoginScreenState extends State<LoginScreen> {
           final fields = data['fields'] as Map<String, dynamic>?;
           final approvedField = fields?['approved'] as Map<String, dynamic>?;
           approved = approvedField?['booleanValue'] as bool? ?? true;
+          final deviceField = fields?['deviceId'] as Map<String, dynamic>?;
+          ownerDevice = deviceField?['stringValue'] as String?;
         }
       } catch (_) {}
+
+      // 자동로그인은 '이어서 쓰는' 것뿐이라 주인 자리를 뺏지 않는다.
+      // 그 사이 다른 폰에서 로그인해 밀려났다면 여기서 걸러진다.
+      if (!await DeviceLock.isMine(ownerDevice)) {
+        await prefs.setBool('auto_login', false);
+        await FirebaseAuth.instance.signOut();
+        if (mounted) {
+          setState(() {
+            _autoLogin = false;
+            _isLoading = false;
+          });
+          _showMessage('다른 기기에서 로그인되어 로그아웃되었어요');
+        }
+        return;
+      }
+      // 아직 주인이 없으면(업데이트 직후 첫 실행) 이 폰이 가져간다
+      if (ownerDevice == null || ownerDevice.isEmpty) await DeviceLock.claim();
 
       if (!mounted) return;
       _goAfterLogin(approved);
@@ -168,6 +189,10 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         }
       } catch (_) {}
+
+      // 비밀번호로 직접 로그인했으면 이 폰이 새 주인이 된다.
+      // 먼저 쓰던 폰은 users 문서를 지켜보다가 스스로 로그아웃한다.
+      await DeviceLock.claim();
 
       if (!mounted) return;
       _goAfterLogin(approved);
