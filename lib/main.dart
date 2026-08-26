@@ -1,11 +1,13 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'data/fake_chat_list.dart';
 import 'firebase_options.dart';
 import 'screens/login_screen.dart';
 import 'services/kakao_service.dart';
 import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
+import 'utils/direct_chat_pref.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +17,8 @@ void main() async {
 
   await NotificationService.init();
   await AppTheme.load();
+  await FakeChatStore.load();
+  await DirectChatPref.load();
 
   // 카카오 OAuth 콜백 감지 (웹에서 code 파라미터 확인)
   if (kIsWeb) {
