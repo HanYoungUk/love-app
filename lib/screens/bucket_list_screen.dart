@@ -83,7 +83,8 @@ class _BucketListScreenState extends State<BucketListScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppTheme.light, AppTheme.primary, AppTheme.dark],
+            colors: AppTheme.gradient,
+            stops: AppTheme.gradientStops,
           ),
         ),
         child: SafeArea(
@@ -96,11 +97,11 @@ class _BucketListScreenState extends State<BucketListScreen> {
                   children: [
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                      icon: Icon(Icons.arrow_back_ios, color: AppTheme.onGradient),
                     ),
-                    const Text(
+                    Text(
                       '우리 버킷리스트 🌟',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.onGradient),
                     ),
                   ],
                 ),
@@ -117,11 +118,11 @@ class _BucketListScreenState extends State<BucketListScreen> {
                       children: [
                         Text(
                           '$done / $total 완료',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                          style: TextStyle(color: AppTheme.onGradient, fontWeight: FontWeight.bold, fontSize: 15),
                         ),
                         Text(
                           '${(progress * 100).toStringAsFixed(0)}%',
-                          style: const TextStyle(color: Colors.white, fontSize: 15),
+                          style: TextStyle(color: AppTheme.onGradient, fontSize: 15),
                         ),
                       ],
                     ),
@@ -130,8 +131,9 @@ class _BucketListScreenState extends State<BucketListScreen> {
                       borderRadius: BorderRadius.circular(8),
                       child: LinearProgressIndicator(
                         value: progress,
-                        backgroundColor: Colors.white.withValues(alpha: 0.3),
-                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                        backgroundColor: AppTheme.overlayAlpha(0.3),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(AppTheme.onGradient),
                         minHeight: 10,
                       ),
                     ),
@@ -178,11 +180,11 @@ class _BucketListScreenState extends State<BucketListScreen> {
                         width: 50,
                         height: 50,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.25),
+                          color: AppTheme.overlayAlpha(0.25),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+                          border: Border.all(color: AppTheme.overlayAlpha(0.5)),
                         ),
-                        child: const Icon(Icons.add, color: Colors.white, size: 28),
+                        child: Icon(Icons.add, color: AppTheme.onGradient, size: 28),
                       ),
                     ),
                   ],
@@ -194,7 +196,9 @@ class _BucketListScreenState extends State<BucketListScreen> {
               // 리스트
               Expanded(
                 child: _loading
-                    ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                    ? Center(
+                        child: CircularProgressIndicator(
+                            color: AppTheme.onGradient))
                     : _items.isEmpty
                         ? Center(
                             child: Column(
@@ -206,7 +210,7 @@ class _BucketListScreenState extends State<BucketListScreen> {
                                   '아직 버킷리스트가 없어요\n함께 하고 싶은 것들을 추가해보세요!',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.9),
+                                    color: AppTheme.onGradientAlpha(0.9),
                                     fontSize: 15,
                                     height: 1.6,
                                   ),

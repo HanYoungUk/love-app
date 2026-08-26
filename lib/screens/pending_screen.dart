@@ -61,7 +61,8 @@ class _PendingScreenState extends State<PendingScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppTheme.light, AppTheme.primary, AppTheme.dark],
+            colors: AppTheme.gradient,
+            stops: AppTheme.gradientStops,
           ),
         ),
         child: SafeArea(
@@ -81,8 +82,11 @@ class _PendingScreenState extends State<PendingScreen> {
                         );
                       }
                     },
-                    icon: const Icon(Icons.logout, color: Colors.white70, size: 18),
-                    label: const Text('로그아웃', style: TextStyle(color: Colors.white70)),
+                    icon: Icon(Icons.logout,
+                        color: AppTheme.onGradientAlpha(0.7), size: 18),
+                    label: Text('로그아웃',
+                        style:
+                            TextStyle(color: AppTheme.onGradientAlpha(0.7))),
                   ),
                 ),
               ),
@@ -96,18 +100,19 @@ class _PendingScreenState extends State<PendingScreen> {
                         Container(
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
+                            color: AppTheme.overlayAlpha(0.15),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.hourglass_top_rounded, size: 64, color: Colors.white),
+                          child: Icon(Icons.hourglass_top_rounded,
+                              size: 64, color: AppTheme.onGradient),
                         ),
                         const SizedBox(height: 32),
-                        const Text(
+                        Text(
                           '승인 대기 중이에요',
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: AppTheme.onGradient,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -116,16 +121,16 @@ class _PendingScreenState extends State<PendingScreen> {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 15,
-                            color: Colors.white.withValues(alpha: 0.85),
+                            color: AppTheme.onGradientAlpha(0.85),
                             height: 1.6,
                           ),
                         ),
                         const SizedBox(height: 32),
-                        const SizedBox(
+                        SizedBox(
                           width: 32,
                           height: 32,
                           child: CircularProgressIndicator(
-                            color: Colors.white,
+                            color: AppTheme.onGradient,
                             strokeWidth: 3,
                           ),
                         ),

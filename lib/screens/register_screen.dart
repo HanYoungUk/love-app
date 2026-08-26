@@ -161,11 +161,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              AppTheme.light,
-              AppTheme.primary,
-              AppTheme.dark,
-            ],
+            colors: AppTheme.gradient,
+            stops: AppTheme.gradientStops,
           ),
         ),
         child: SafeArea(
@@ -178,7 +175,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   alignment: Alignment.topLeft,
                   child: IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+                    icon: Icon(Icons.arrow_back_ios_new,
+                        color: AppTheme.onGradient),
                   ),
                 ),
               ),
@@ -189,14 +187,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.favorite, size: 48, color: Colors.white),
+                        Icon(Icons.favorite,
+                            size: 48, color: AppTheme.onGradient),
                         const SizedBox(height: 12),
-                        const Text(
+                        Text(
                           '회원가입',
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: AppTheme.onGradient,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -204,7 +203,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           '사용할 아이디와 비밀번호를 입력하세요',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.white.withValues(alpha: 0.85),
+                            color: AppTheme.onGradientAlpha(0.85),
                           ),
                         ),
                         const SizedBox(height: 32),

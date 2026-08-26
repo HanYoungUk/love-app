@@ -152,7 +152,8 @@ class _GalleryScreenState extends State<GalleryScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppTheme.light, AppTheme.primary, AppTheme.dark],
+            colors: AppTheme.gradient,
+            stops: AppTheme.gradientStops,
           ),
         ),
         child: SafeArea(
@@ -166,25 +167,25 @@ class _GalleryScreenState extends State<GalleryScreen> {
                   children: [
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back_ios_new,
-                          color: Colors.white),
+                      icon: Icon(Icons.arrow_back_ios_new,
+                          color: AppTheme.onGradient),
                     ),
                     Expanded(
                       child: Column(
                         children: [
                           Text(
                             '${d.year}년 ${d.month}월 ${d.day}일',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: AppTheme.onGradient,
                             ),
                           ),
                           if (!_loading)
                             Text(
                               '사진 ${_photos.length}장',
                               style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.8),
+                                  color: AppTheme.onGradientAlpha(0.8),
                                   fontSize: 12),
                             ),
                         ],
@@ -196,23 +197,23 @@ class _GalleryScreenState extends State<GalleryScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const SizedBox(
+                            SizedBox(
                               width: 16, height: 16,
                               child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 2),
+                                  color: AppTheme.onGradient, strokeWidth: 2),
                             ),
                             const SizedBox(width: 6),
                             Text('$_downloadProgress/${_photos.length}',
-                                style: const TextStyle(
-                                    color: Colors.white, fontSize: 12)),
+                                style: TextStyle(
+                                    color: AppTheme.onGradient, fontSize: 12)),
                           ],
                         ),
                       )
                     else if (_photos.isNotEmpty)
                       IconButton(
                         onPressed: _downloadAll,
-                        icon: const Icon(Icons.download_outlined,
-                            color: Colors.white, size: 26),
+                        icon: Icon(Icons.download_outlined,
+                            color: AppTheme.onGradient, size: 26),
                         tooltip: '전체 다운로드',
                       ),
                     _uploading
@@ -221,23 +222,23 @@ class _GalleryScreenState extends State<GalleryScreen> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const SizedBox(
+                                SizedBox(
                                   width: 16, height: 16,
                                   child: CircularProgressIndicator(
-                                      color: Colors.white, strokeWidth: 2),
+                                      color: AppTheme.onGradient, strokeWidth: 2),
                                 ),
                                 const SizedBox(width: 6),
                                 Text('$_uploadProgress/$_uploadTotal',
-                                    style: const TextStyle(
-                                        color: Colors.white, fontSize: 12)),
+                                    style: TextStyle(
+                                        color: AppTheme.onGradient, fontSize: 12)),
                               ],
                             ),
                           )
                         : IconButton(
                             onPressed: _upload,
-                            icon: const Icon(
+                            icon: Icon(
                                 Icons.add_photo_alternate_outlined,
-                                color: Colors.white,
+                                color: AppTheme.onGradient,
                                 size: 28),
                           ),
                   ],

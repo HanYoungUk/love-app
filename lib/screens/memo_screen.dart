@@ -115,7 +115,8 @@ class _MemoScreenState extends State<MemoScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppTheme.light, AppTheme.primary, AppTheme.dark],
+            colors: AppTheme.gradient,
+            stops: AppTheme.gradientStops,
           ),
         ),
         child: SafeArea(
@@ -129,16 +130,16 @@ class _MemoScreenState extends State<MemoScreen> {
                   children: [
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back_ios_new,
-                          color: Colors.white),
+                      icon: Icon(Icons.arrow_back_ios_new,
+                          color: AppTheme.onGradient),
                     ),
                     Expanded(
                       child: Text(
                         '${d.year}년 ${d.month}월 ${d.day}일',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: AppTheme.onGradient,
                         ),
                         textAlign: TextAlign.center,
                       ),

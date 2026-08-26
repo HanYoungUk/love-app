@@ -7,6 +7,9 @@ Future<void> showThemePicker(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
     backgroundColor: Colors.white,
+    // 기본 바텀시트는 화면 높이의 9/16까지만 커진다. 색상 6칸 + 닫기 버튼이
+    // 그보다 높아서 아래가 잘렸다.
+    isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
@@ -15,57 +18,68 @@ Future<void> showThemePicker(BuildContext context) {
         child: ValueListenableBuilder<AppPalette>(
           valueListenable: AppTheme.current,
           builder: (context, selected, _) {
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    '테마 색상',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '이 기기에만 적용돼요',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                  ),
-                  const SizedBox(height: 16),
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 0.95,
+            return ConstrainedBox(
+              // 화면이 아주 낮으면(가로 모드 등) 시트 안에서 스크롤되게 한다
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.9,
+              ),
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      for (final p in AppTheme.palettes)
-                        _PaletteTile(
-                          palette: p,
-                          selected: p.id == selected.id,
-                          onTap: () => AppTheme.set(p),
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        '테마 색상',
+                        style:
+                            TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '이 기기에만 적용돼요',
+                        style:
+                            TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                      const SizedBox(height: 16),
+                      GridView.count(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 0.95,
+                        children: [
+                          for (final p in AppTheme.palettes)
+                            _PaletteTile(
+                              palette: p,
+                              selected: p.id == selected.id,
+                              onTap: () => AppTheme.set(p),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Center(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text('닫기',
+                              style: TextStyle(color: AppTheme.primary)),
+                        ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Center(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text('닫기', style: TextStyle(color: AppTheme.primary)),
-                    ),
-                  ),
-                ],
+                ),
               ),
             );
           },
@@ -96,10 +110,16 @@ class _PaletteTile extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: palette.gradient,
+            stops: palette.gradientStops,
           ),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: selected ? Colors.black87 : Colors.transparent,
+            // 밝은 테마 타일은 흰 시트에 묻히니 테두리를 준다
+            color: selected
+                ? Colors.black87
+                : (palette.isLight
+                    ? const Color(0xFFDDDDDD)
+                    : Colors.transparent),
             width: 3,
           ),
           boxShadow: [
@@ -120,8 +140,9 @@ class _PaletteTile extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     palette.label,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    // 밝은 테마 타일은 글씨가 흰색이면 안 보인다
+                    style: TextStyle(
+                      color: palette.onGradient,
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),
@@ -130,10 +151,11 @@ class _PaletteTile extends StatelessWidget {
               ),
             ),
             if (selected)
-              const Positioned(
+              Positioned(
                 top: 6,
                 right: 6,
-                child: Icon(Icons.check_circle, color: Colors.white, size: 20),
+                child: Icon(Icons.check_circle,
+                    color: palette.onGradient, size: 20),
               ),
           ],
         ),

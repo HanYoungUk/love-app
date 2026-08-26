@@ -472,11 +472,11 @@ class _DiaryScreenState extends State<DiaryScreen> {
           controller: topController,
           maxLines: null,
           minLines: 3,
-          style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.6),
-          cursorColor: Colors.white,
+          style: TextStyle(color: AppTheme.onGradient, fontSize: 15, height: 1.6),
+          cursorColor: AppTheme.onGradient,
           decoration: InputDecoration(
             hintText: '오늘의 이야기를 적어보세요 💕',
-            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
+            hintStyle: TextStyle(color: AppTheme.onGradientAlpha(0.5), fontSize: 14),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.only(bottom: 8),
           ),
@@ -517,7 +517,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                                 padding: const EdgeInsets.all(4),
                                 decoration: const BoxDecoration(
                                     color: Colors.black54, shape: BoxShape.circle),
-                                child: const Icon(Icons.arrow_upward, color: Colors.white, size: 16),
+                                child: Icon(Icons.arrow_upward, color: AppTheme.onGradient, size: 16),
                               ),
                             ),
                           if (i > 0 && i < entries.length - 1)
@@ -536,7 +536,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                                 padding: const EdgeInsets.all(4),
                                 decoration: const BoxDecoration(
                                     color: Colors.black54, shape: BoxShape.circle),
-                                child: const Icon(Icons.arrow_downward, color: Colors.white, size: 16),
+                                child: Icon(Icons.arrow_downward, color: AppTheme.onGradient, size: 16),
                               ),
                             ),
                         ],
@@ -552,7 +552,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                           padding: const EdgeInsets.all(4),
                           decoration: const BoxDecoration(
                               color: Colors.black54, shape: BoxShape.circle),
-                          child: const Icon(Icons.close, color: Colors.white, size: 16),
+                          child: Icon(Icons.close, color: AppTheme.onGradient, size: 16),
                         ),
                       ),
                     ),
@@ -563,9 +563,9 @@ class _DiaryScreenState extends State<DiaryScreen> {
                   controller: entry.controller,
                   maxLines: null,
                   minLines: 2,
-                  style: const TextStyle(
-                      color: Colors.white, fontSize: 15, height: 1.6),
-                  cursorColor: Colors.white,
+                  style: TextStyle(
+                      color: AppTheme.onGradient, fontSize: 15, height: 1.6),
+                  cursorColor: AppTheme.onGradient,
                   decoration: InputDecoration(
                     hintText: '',
                     border: InputBorder.none,
@@ -586,24 +586,24 @@ class _DiaryScreenState extends State<DiaryScreen> {
             children: [
               Expanded(
                   child: Divider(
-                      color: Colors.white.withValues(alpha: 0.35), thickness: 1)),
+                      color: AppTheme.onGradientAlpha(0.35), thickness: 1)),
               const SizedBox(width: 8),
               (isMe ? _uploadingMe : _uploadingPartner)
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2))
+                          color: AppTheme.onGradient, strokeWidth: 2))
                   : Icon(Icons.add_photo_alternate,
-                      color: Colors.white.withValues(alpha: 0.8), size: 20),
+                      color: AppTheme.onGradientAlpha(0.8), size: 20),
               const SizedBox(width: 4),
               Text('사진 삽입',
                   style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
+                      color: AppTheme.onGradientAlpha(0.8), fontSize: 12)),
               const SizedBox(width: 8),
               Expanded(
                   child: Divider(
-                      color: Colors.white.withValues(alpha: 0.35), thickness: 1)),
+                      color: AppTheme.onGradientAlpha(0.35), thickness: 1)),
             ],
           ),
         ),
@@ -766,9 +766,9 @@ class _DiaryScreenState extends State<DiaryScreen> {
       children: [
         Row(
           children: [
-            const Icon(Icons.calendar_today, color: Colors.white, size: 14),
+            Icon(Icons.calendar_today, color: AppTheme.onGradient, size: 14),
             const SizedBox(width: 6),
-            const Text('오늘의 일정', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+            Text('오늘의 일정', style: TextStyle(color: AppTheme.onGradient, fontSize: 13, fontWeight: FontWeight.bold)),
           ],
         ),
         const SizedBox(height: 10),
@@ -807,10 +807,10 @@ class _DiaryScreenState extends State<DiaryScreen> {
                     child: TextField(
                       controller: s.timeController,
                       enabled: false,
-                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                      style: TextStyle(color: AppTheme.onGradient, fontSize: 13),
                       decoration: InputDecoration(
                         hintText: '00:00',
-                        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
+                        hintStyle: TextStyle(color: AppTheme.onGradientAlpha(0.4), fontSize: 12),
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.zero,
                         isDense: true,
@@ -819,16 +819,16 @@ class _DiaryScreenState extends State<DiaryScreen> {
                     ),
                   ),
                 ),
-                Container(width: 1, height: 14, color: Colors.white.withValues(alpha: 0.4)),
+                Container(width: 1, height: 14, color: AppTheme.onGradientAlpha(0.4)),
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
                     controller: s.titleController,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                    cursorColor: Colors.white,
+                    style: TextStyle(color: AppTheme.onGradient, fontSize: 13),
+                    cursorColor: AppTheme.onGradient,
                     decoration: InputDecoration(
                       hintText: '일정 내용',
-                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
+                      hintStyle: TextStyle(color: AppTheme.onGradientAlpha(0.4), fontSize: 12),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
                       isDense: true,
@@ -837,7 +837,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                 ),
                 GestureDetector(
                   onTap: () => setState(() => _schedules.removeAt(i)),
-                  child: Icon(Icons.close, color: Colors.white.withValues(alpha: 0.6), size: 16),
+                  child: Icon(Icons.close, color: AppTheme.onGradientAlpha(0.6), size: 16),
                 ),
               ],
             ),
@@ -847,14 +847,14 @@ class _DiaryScreenState extends State<DiaryScreen> {
           onTap: () => setState(() => _schedules.add(_ScheduleEntry())),
           child: Row(
             children: [
-              Icon(Icons.add, color: Colors.white.withValues(alpha: 0.8), size: 14),
+              Icon(Icons.add, color: AppTheme.onGradientAlpha(0.8), size: 14),
               const SizedBox(width: 4),
-              Text('일정 추가', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
+              Text('일정 추가', style: TextStyle(color: AppTheme.onGradientAlpha(0.8), fontSize: 12)),
             ],
           ),
         ),
         const SizedBox(height: 14),
-        Divider(color: Colors.white.withValues(alpha: 0.3), thickness: 1),
+        Divider(color: AppTheme.onGradientAlpha(0.3), thickness: 1),
         const SizedBox(height: 12),
       ],
     );
@@ -867,23 +867,23 @@ class _DiaryScreenState extends State<DiaryScreen> {
       children: [
         Row(
           children: [
-            const Icon(Icons.location_on, color: Colors.white, size: 16),
+            Icon(Icons.location_on, color: AppTheme.onGradient, size: 16),
             const SizedBox(width: 4),
-            const Text('방문한 장소', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+            Text('방문한 장소', style: TextStyle(color: AppTheme.onGradient, fontSize: 13, fontWeight: FontWeight.bold)),
             const Spacer(),
             GestureDetector(
               onTap: _openMaps,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.25),
+                  color: AppTheme.onGradientAlpha(0.25),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.map_outlined, color: Colors.white, size: 14),
+                    Icon(Icons.map_outlined, color: AppTheme.onGradient, size: 14),
                     SizedBox(width: 4),
-                    Text('지도 열기', style: TextStyle(color: Colors.white, fontSize: 12)),
+                    Text('지도 열기', style: TextStyle(color: AppTheme.onGradient, fontSize: 12)),
                   ],
                 ),
               ),
@@ -903,11 +903,11 @@ class _DiaryScreenState extends State<DiaryScreen> {
                     Expanded(
                       child: TextField(
                         controller: place.nameController,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                        cursorColor: Colors.white,
+                        style: TextStyle(color: AppTheme.onGradient, fontSize: 14),
+                        cursorColor: AppTheme.onGradient,
                         decoration: InputDecoration(
                           hintText: '장소 이름',
-                          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
+                          hintStyle: TextStyle(color: AppTheme.onGradientAlpha(0.5), fontSize: 13),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.zero,
                           isDense: true,
@@ -918,7 +918,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                       onTap: () => _showPlaceSearch(place),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Icon(Icons.search, color: Colors.white.withValues(alpha: 0.8), size: 20),
+                        child: Icon(Icons.search, color: AppTheme.onGradientAlpha(0.8), size: 20),
                       ),
                     ),
                     ...List.generate(5, (s) {
@@ -941,7 +941,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                       onTap: () => setState(() {
                         places.removeAt(i);
                       }),
-                      child: Icon(Icons.close, color: Colors.white.withValues(alpha: 0.6), size: 18),
+                      child: Icon(Icons.close, color: AppTheme.onGradientAlpha(0.6), size: 18),
                     ),
                   ],
                 ),
@@ -950,7 +950,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                     padding: const EdgeInsets.only(top: 2, left: 2),
                     child: Text(
                       place.address,
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 11),
+                      style: TextStyle(color: AppTheme.onGradientAlpha(0.7), fontSize: 11),
                     ),
                   ),
               ],
@@ -961,9 +961,9 @@ class _DiaryScreenState extends State<DiaryScreen> {
           onTap: () => setState(() => places.add(_PlaceEntry())),
           child: Row(
             children: [
-              Icon(Icons.add, color: Colors.white.withValues(alpha: 0.8), size: 16),
+              Icon(Icons.add, color: AppTheme.onGradientAlpha(0.8), size: 16),
               const SizedBox(width: 4),
-              Text('장소 추가', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
+              Text('장소 추가', style: TextStyle(color: AppTheme.onGradientAlpha(0.8), fontSize: 12)),
             ],
           ),
         ),
@@ -979,17 +979,17 @@ class _DiaryScreenState extends State<DiaryScreen> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.2),
+        color: AppTheme.overlayAlpha(0.2),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
+        border: Border.all(color: AppTheme.overlayAlpha(0.4)),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
-              style: const TextStyle(
-                  color: Colors.white,
+              style: TextStyle(
+                  color: AppTheme.onGradient,
                   fontSize: 15,
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
@@ -1016,11 +1016,8 @@ class _DiaryScreenState extends State<DiaryScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              AppTheme.light,
-              AppTheme.primary,
-              AppTheme.dark,
-            ],
+            colors: AppTheme.gradient,
+            stops: AppTheme.gradientStops,
           ),
         ),
         child: SafeArea(
@@ -1033,42 +1030,42 @@ class _DiaryScreenState extends State<DiaryScreen> {
                   children: [
                     IconButton(
                       onPressed: _handleBack,
-                      icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                      icon: Icon(Icons.arrow_back_ios, color: AppTheme.onGradient),
                     ),
                     Expanded(
                       child: Text(
                         _dateLabel,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white),
+                            color: AppTheme.onGradient),
                         textAlign: TextAlign.center,
                       ),
                     ),
                     _saving
-                        ? const Padding(
-                            padding: EdgeInsets.all(12),
+                        ? Padding(
+                            padding: const EdgeInsets.all(12),
                             child: SizedBox(
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(
-                                    color: Colors.white, strokeWidth: 2)),
+                                    color: AppTheme.onGradient, strokeWidth: 2)),
                           )
                         : IconButton(
                             onPressed: _save,
-                            icon: const Icon(Icons.check,
-                                color: Colors.white, size: 28),
+                            icon: Icon(Icons.check,
+                                color: AppTheme.onGradient, size: 28),
                           ),
                     IconButton(
                       onPressed: () => Navigator.push(
                         context,
                         appRoute(GalleryScreen(date: widget.date)),
                       ),
-                      icon: const Icon(Icons.photo_library_outlined,
-                          color: Colors.white, size: 26),
+                      icon: Icon(Icons.photo_library_outlined,
+                          color: AppTheme.onGradient, size: 26),
                     ),
                     PopupMenuButton<String>(
-                      icon: const Icon(Icons.more_vert, color: Colors.white),
+                      icon: Icon(Icons.more_vert, color: AppTheme.onGradient),
                       color: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       onSelected: (value) {
@@ -1096,7 +1093,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: AppTheme.overlayAlpha(0.2),
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: Row(
@@ -1115,7 +1112,9 @@ class _DiaryScreenState extends State<DiaryScreen> {
                               '영욱 💕',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: _showMe ? AppTheme.primary : Colors.white,
+                                color: _showMe
+                                    ? AppTheme.primary
+                                    : AppTheme.onGradient,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
                               ),
@@ -1137,7 +1136,9 @@ class _DiaryScreenState extends State<DiaryScreen> {
                               '소영 💕',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: !_showMe ? AppTheme.primary : Colors.white,
+                                color: !_showMe
+                                    ? AppTheme.primary
+                                    : AppTheme.onGradient,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
                               ),
