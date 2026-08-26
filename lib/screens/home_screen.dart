@@ -531,9 +531,13 @@ class _HomeScreenState extends State<HomeScreen> {
   void _listenMessageNotifications() {
     final currentUid = FirebaseAuth.instance.currentUser?.uid;
     final appStart = Timestamp.now();
+    // 새로 온 것만 보면 되는데 예전엔 messages 전체를 구독했다.
+    // 앱을 켜 두는 내내 수백 건을 붙들고 있어서 채팅이 통째로 느려졌다.
+    // 한 번에 여러 건이 몰려도 놓치지 않게 여유를 두고 최근 20건만 본다.
     _msgNotifSub = FirebaseFirestore.instance
         .collection('messages')
         .orderBy('createdAt')
+        .limitToLast(20)
         .snapshots()
         .listen((snap) {
       for (final change in snap.docChanges) {
@@ -802,7 +806,8 @@ class _HomeScreenState extends State<HomeScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppTheme.light, AppTheme.primary, AppTheme.dark],
+            colors: AppTheme.gradient,
+            stops: AppTheme.gradientStops,
           ),
         ),
         child: SafeArea(
@@ -813,7 +818,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  color: Colors.black.withValues(alpha: 0.3),
+                  color: Colors.black.withValues(alpha: AppTheme.isLight ? 0.55 : 0.3),
                   child: Row(
                     children: [
                       const Icon(Icons.add_to_home_screen, color: Colors.white, size: 18),
@@ -838,7 +843,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    color: Colors.black.withValues(alpha: 0.35),
+                    color: Colors.black.withValues(alpha: AppTheme.isLight ? 0.55 : 0.35),
                     child: Row(
                       children: [
                         const Icon(Icons.notifications_active, color: Colors.white, size: 18),
@@ -862,9 +867,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 child: Row(
                   children: [
-                    const Text(
+                    Text(
                       '우리들의 일기',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.onGradient),
                     ),
                     const Spacer(),
                     // 채팅 버튼
@@ -915,7 +923,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Navigator.of(context).pushReplacement(appRoute(const LoginScreen()));
                         }
                       },
-                      icon: const Icon(Icons.logout, color: Colors.white),
+                      icon: Icon(Icons.logout, color: AppTheme.onGradient),
                     ),
                   ],
                 ),
@@ -927,10 +935,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     children: [
                       // 커플 사진
+                      // 넓은 브라우저에서 가로로만 늘어나면 높이 260에 맞춰 잘려나가서
+                      // 가운데 띠만 남는다. 폭을 폰과 비슷하게 묶어 둔다.
                       GestureDetector(
                         onTap: _uploading ? null : _pickPhoto,
                         child: Center(
-                          child: _photoUrl != null
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 420),
+                            child: _photoUrl != null
                               ? Container(
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(20),
@@ -959,9 +971,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                             }
                                           });
                                         }
-                                        return const SizedBox(
+                                        return SizedBox(
                                           height: 260,
-                                          child: Center(child: CircularProgressIndicator(color: Colors.white)),
+                                          child: Center(
+                                              child: CircularProgressIndicator(
+                                                  color: AppTheme.onGradient)),
                                         );
                                       },
                                     ),
@@ -971,25 +985,32 @@ class _HomeScreenState extends State<HomeScreen> {
                                   width: double.infinity,
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(20),
-                                    color: Colors.white.withValues(alpha: 0.2),
+                                    color: AppTheme.overlayAlpha(0.2),
                                   ),
                                   child: _uploading
-                                      ? const Padding(
-                                          padding: EdgeInsets.symmetric(vertical: 50),
-                                          child: Center(child: CircularProgressIndicator(color: Colors.white)),
+                                      ? Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 50),
+                                          child: Center(
+                                              child: CircularProgressIndicator(
+                                                  color: AppTheme.onGradient)),
                                         )
-                                      : const Padding(
-                                          padding: EdgeInsets.symmetric(vertical: 40),
+                                      : Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 40),
                                           child: Column(
                                             mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
-                                              Icon(Icons.add_a_photo, color: Colors.white, size: 40),
-                                              SizedBox(height: 8),
-                                              Text('사진 추가', style: TextStyle(color: Colors.white, fontSize: 13)),
+                                              Icon(Icons.add_a_photo,
+                                                  color: AppTheme.onGradient, size: 40),
+                                              const SizedBox(height: 8),
+                                              Text('사진 추가',
+                                                  style: TextStyle(
+                                                      color: AppTheme.onGradient,
+                                                      fontSize: 13)),
                                             ],
                                           ),
                                         ),
                                 ),
+                          ),
                         ),
                       ),
 
@@ -1002,36 +1023,36 @@ class _HomeScreenState extends State<HomeScreen> {
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
+                            color: AppTheme.overlayAlpha(0.2),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
+                            border: Border.all(color: AppTheme.overlayAlpha(0.4)),
                           ),
                           child: Column(
                             children: [
                               Text(
                                 '영욱 ❤️ 소영 사귄 지',
-                                style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 16),
+                                style: TextStyle(color: AppTheme.onGradientAlpha(0.9), fontSize: 16),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 '$_dayCount일',
-                                style: const TextStyle(color: Colors.white, fontSize: 56, fontWeight: FontWeight.bold),
+                                style: TextStyle(color: AppTheme.onGradient, fontSize: 56, fontWeight: FontWeight.bold),
                               ),
                               Text(
                                 _startDateText,
-                                style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
+                                style: TextStyle(color: AppTheme.onGradientAlpha(0.8), fontSize: 14),
                               ),
                               if (next != null) ...[
                                 const SizedBox(height: 10),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.25),
+                                    color: AppTheme.overlayAlpha(0.25),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
                                     '🎉 ${next.label}까지 ${next.daysLeft}일 남았어요',
-                                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                                    style: TextStyle(color: AppTheme.onGradient, fontSize: 13, fontWeight: FontWeight.w600),
                                   ),
                                 ),
                               ],

@@ -12,16 +12,17 @@
     ],
     "headers": [
       {
-        "source": "/index.html",
+        "//": "Flutter 웹은 파일 이름에 해시를 안 붙인다. main.dart.js는 매 빌드마다 내용만 바뀌고 이름은 그대로다. 그래서 immutable을 걸면 브라우저가 1년간 서버에 물어보지도 않아 새 배포가 영영 안 보인다. no-cache는 '캐시하지 마라'가 아니라 '쓰기 전에 물어봐라'라서, 안 바뀌었으면 304만 오고 다시 안 받는다.",
+        "source": "**/*.@(html|js|json|wasm)",
         "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
       },
       {
         "source": "assets/**",
-        "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
       },
       {
-        "source": "**/*.@(js|wasm|ttf|otf|png|ico)",
-        "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+        "source": "canvaskit/**",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
       },
       {
         "source": "**/*.apk",
