@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Love App">
-  <meta name="theme-color" content="#E91E63">
+  <meta name="theme-color" content="#FFFFFF">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
   <link rel="apple-touch-icon" sizes="512x512" href="icons/Icon-512.png">
   <link rel="icon" type="image/png" href="favicon.png"/>
@@ -17,40 +17,19 @@
   <link rel="manifest" href="manifest.json">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #E91E63; }
+    body { background: #FFFFFF; }
+    /* 로딩 중에는 아무것도 없는 흰 화면만 보여준다 */
     #loading {
       position: fixed;
       inset: 0;
-      background: linear-gradient(to bottom, #FF6B9D, #E91E63, #C2185B);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      background: #FFFFFF;
       z-index: 999;
       transition: opacity 0.4s ease;
-    }
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.25); }
-    }
-    #loading-heart {
-      font-size: 64px;
-      animation: pulse 1.2s ease-in-out infinite;
-    }
-    #loading-text {
-      color: rgba(255,255,255,0.9);
-      font-size: 15px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      margin-top: 20px;
-      letter-spacing: 0.5px;
     }
   </style>
 </head>
 <body>
-  <div id="loading">
-    <div id="loading-heart">❤️</div>
-    <div id="loading-text">잠시만요...</div>
-  </div>
+  <div id="loading"></div>
   <script>
     window.addEventListener('flutter-first-frame', function () {
       var el = document.getElementById('loading');
@@ -61,6 +40,8 @@
       navigator.serviceWorker.register('/firebase-messaging-sw.js');
     }
   </script>
+  <!-- 캡쳐 인식용 OCR 글루 (tesseract 본체는 처음 쓸 때만 내려받음) -->
+  <script src="ocr/ocr.js" defer></script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
