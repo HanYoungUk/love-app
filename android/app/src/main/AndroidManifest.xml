@@ -4,7 +4,11 @@
     <application
         android:label="love_app"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:fullBackupContent="false">
+        <!-- 백업 끔: 폰을 바꿀 때 Firebase 로그인 암호화 키 파일이 옛 폰에서 복원되면
+             새 폰 키로는 못 풀어서 로그인이 저장 안 된다(S10→S24에서 실제로 겪음) -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
